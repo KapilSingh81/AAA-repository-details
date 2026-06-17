@@ -6,8 +6,10 @@ import { DocumentService } from '../../services/document-service';
 import { CommonService } from '../../../../shared/services/common-services/common-service';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { Subject } from 'rxjs';
-import { ProjectDetails } from '../../components/project-detatils/project-detatils';
 import { Router } from '@angular/router';
+import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
+import { CookieService } from 'ngx-cookie-service';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 interface Document {
   id: string;
@@ -30,19 +32,25 @@ export class ManageDashboard {
   private documentService = inject(DocumentService);
   private commonService = inject(CommonService);
   private cdr = inject(ChangeDetectorRef);
-  private router = inject(Router)
+  private router = inject(Router);
+  private notification = inject(NotificationService);
+  private cookieService = inject(CookieService);
+  private http = inject(HttpClient);
 
   viewMode = signal<'table' | 'card'>('table');
   currentPage = signal(1);
   pageSize = signal(10);
   bsModalRef!: BsModalRef;
   isLoading = signal(false);
+  isDownloading = signal<string | null>(null);
 
   // Filter properties
   searchName = signal('');
   selectedType = signal('');
   documentTypeList: any;
-    private searchSubject = new Subject<string>();
+  private searchSubject = new Subject<string>();
+
+  // Icon mapping for audit types
   private auditIconMap: { [key: string]: string } = {
     'web': '🌐',
     'vapt': '🛡️',
@@ -61,7 +69,6 @@ export class ManageDashboard {
     'default': '📄'
   };
 
-  // Color mapping for document types
   private auditColorMap: { [key: string]: string } = {
     'web': 'bg-blue-100',
     'vapt': 'bg-purple-100',
@@ -80,23 +87,22 @@ export class ManageDashboard {
     'default': 'bg-gray-100'
   };
 
-  // Badge class mapping for audit types
   private auditBadgeMap: { [key: string]: string } = {
-    'web': 'bg-blue-500 text-blue-800',
-    'vapt': 'bg-purple-500 text-purple-800',
-    'comprehensive': 'bg-indigo-500 text-indigo-800',
-    'mobile': 'bg-green-500 text-green-800',
-    'source_code': 'bg-cyan-500 text-cyan-800',
-    'web_api': 'bg-teal-500 text-teal-800',
-    'audit': 'bg-blue-500 text-blue-800',
-    'compliance': 'bg-green-500 text-green-800',
-    'security': 'bg-red-500 text-red-800',
-    'penetration': 'bg-orange-500 text-orange-800',
-    'vulnerability': 'bg-yellow-500 text-yellow-800',
-    'project': 'bg-indigo-500 text-indigo-800',
-    'report': 'bg-amber-500 text-amber-800',
-    'certificate': 'bg-emerald-500 text-emerald-800',
-    'default': 'bg-gray-500 text-gray-800'
+    'web': 'bg-blue-100 text-blue-800',
+    'vapt': 'bg-purple-100 text-purple-800',
+    'comprehensive': 'bg-indigo-100 text-indigo-800',
+    'mobile': 'bg-green-100 text-green-800',
+    'source_code': 'bg-cyan-100 text-cyan-800',
+    'web_api': 'bg-teal-100 text-teal-800',
+    'audit': 'bg-blue-100 text-blue-800',
+    'compliance': 'bg-green-100 text-green-800',
+    'security': 'bg-red-100 text-red-800',
+    'penetration': 'bg-orange-100 text-orange-800',
+    'vulnerability': 'bg-yellow-100 text-yellow-800',
+    'project': 'bg-indigo-100 text-indigo-800',
+    'report': 'bg-amber-100 text-amber-800',
+    'certificate': 'bg-emerald-100 text-emerald-800',
+    'default': 'bg-gray-100 text-gray-800'
   };
 
   private allDocuments = signal<Document[]>([]);
@@ -114,14 +120,110 @@ export class ManageDashboard {
   ngOnInit() {
     this.getDocumentList();
     this.getDocumentTypeList();
-    
-    // Setup debounce for search
+
     this.searchSubject.pipe(
       debounceTime(500),
       distinctUntilChanged()
     ).subscribe(() => {
       this.getDocumentList();
     });
+  }
+
+  // Authorization Methods - Only checks for token
+  isAuthorized(): boolean {
+    const token = this.cookieService.get('aaa-token');
+    return !!(token && token.length > 0);
+  }
+
+  showUnauthorizedMessage() {
+    this.notification.error('You are not authorized to download this document. Please login again.');
+  }
+
+  // Handle download with token check
+  handleDownload(doc: Document, type: 'report' | 'certificate') {
+    // Check if user has token
+    if (!this.isAuthorized()) {
+      this.showUnauthorizedMessage();
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const token = this.cookieService.get('aaa-token');
+    if (!token) {
+      this.notification.error('Session expired. Please login again.');
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const url = type === 'report' ? doc.report_download_url : doc.certificate_download_url;
+    if (!url) {
+      this.notification.error('Download URL not available');
+      return;
+    }
+
+    this.isDownloading.set(`${doc.id}-${type}`);
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/octet-stream, application/json'
+    });
+
+    this.http.get(url, { headers, responseType: 'blob', observe: 'response' }).subscribe({
+      next: (response: any) => {
+        this.isDownloading.set(null);
+        let fileName = this.getFileNameFromResponse(response, url, type);
+        const blob = new Blob([response.body], {
+          type: response.body.type || 'application/octet-stream'
+        });
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+
+        this.notification.success(`${type === 'report' ? 'Report' : 'Certificate'} downloaded successfully`);
+      },
+      error: (err) => {
+        this.isDownloading.set(null);
+        console.error('Download error:', err);
+        if (err.status === 401) {
+          this.notification.error('Session expired. Please login again.');
+          this.router.navigate(['/login']);
+        } else if (err.status === 403) {
+          this.notification.error('You do not have permission to download this document.');
+        } else {
+          this.notification.error('Failed to download document. Please try again.');
+        }
+      }
+    });
+  }
+
+  getFileNameFromResponse(response: any, url: string, type: string): string {
+    const contentDisposition = response.headers.get('content-disposition');
+    if (contentDisposition) {
+      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+      if (matches && matches[1]) {
+        return matches[1].replace(/['"]/g, '');
+      }
+    }
+    return this.getFileNameFromUrl(url, type);
+  }
+
+  getFileNameFromUrl(url: string, type: string): string {
+    try {
+      const parts = url.split('/');
+      let fileName = parts[parts.length - 1] || `${type}.pdf`;
+      fileName = fileName.split('?')[0];
+      if (!fileName.includes('.')) {
+        fileName = `${fileName}.pdf`;
+      }
+      return fileName;
+    } catch {
+      return `${type}_${new Date().getTime()}.pdf`;
+    }
   }
 
   getDocumentTypeList() {
@@ -133,19 +235,18 @@ export class ManageDashboard {
 
   getDocumentList() {
     this.isLoading.set(true);
-    
-    // Build payload with filters
+
     let payload: any = {
       uuid: null,
       name: this.searchName() || null,
       audit_type: this.selectedType() || null
     };
-    
+
     this.documentService.dashboardList(payload).subscribe({
       next: (res: any) => {
         this.isLoading.set(false);
         this.allDocuments.set(res?.body?.projects || []);
-        this.currentPage.set(1); // Reset to first page on new search
+        this.currentPage.set(1);
       },
       error: (err) => {
         this.isLoading.set(false);
@@ -158,26 +259,22 @@ export class ManageDashboard {
   onSearchName(event: Event) {
     const value = (event.target as HTMLInputElement).value;
     this.searchName.set(value);
-    // Trigger debounced search
     this.searchSubject.next(value);
   }
 
   onTypeChange(event: Event) {
     const value = (event.target as HTMLSelectElement).value;
     this.selectedType.set(value);
-    // Immediately fetch with type filter
     this.getDocumentList();
   }
 
   clearFilters() {
     this.searchName.set('');
     this.selectedType.set('');
-    // Clear the search subject
     this.searchSubject.next('');
     this.getDocumentList();
   }
 
-  // Get icon based on audit type
   getIcon(doc: Document): string {
     if (doc.audit_type) {
       const type = doc.audit_type.toLowerCase();
@@ -204,7 +301,6 @@ export class ManageDashboard {
     return this.auditIconMap['default'];
   }
 
-  // Get color based on audit type
   getIconColor(doc: Document): string {
     if (doc.audit_type) {
       const type = doc.audit_type.toLowerCase();
@@ -231,7 +327,6 @@ export class ManageDashboard {
     return this.auditColorMap['default'];
   }
 
-  // Get badge class for audit type
   getAuditTypeClass(auditType: string): string {
     if (auditType) {
       const type = auditType.toLowerCase();
@@ -337,7 +432,7 @@ export class ManageDashboard {
         class: 'modal-lg modal-dialog-centered alert-popup',
       })
     );
-    this.bsModalRef?.content.mapdata.subscribe(
+    this.bsModalRef?.content?.mapdata?.subscribe(
       (value: any) => {
         this.getDocumentList();
       }
@@ -347,7 +442,7 @@ export class ManageDashboard {
   insertLineBreaks(text: string | null, interval: number = 200): string {
     if (!text) return '';
     return text.toString().replace(new RegExp(`(.{${interval}})`, 'g'), '$1<br>');
-  };
+  }
 
   onShowProjectDetails(doc: any) {
     this.router.navigate(['/user/project-details', doc.id]);

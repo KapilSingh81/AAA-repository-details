@@ -116,7 +116,8 @@ export class AddDocment {
     return (size / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
-  onSubmit() {
+  onSubmit(e:any) {
+    e.preventDefault();
     Object.keys(this.documentForm.controls).forEach(key => {
       this.documentForm.get(key)?.markAsTouched();
     });

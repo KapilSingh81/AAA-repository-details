@@ -30,14 +30,6 @@
                     </button>
                 </div>
 
-                <!-- <button class="rounded-xl border px-4 py-2 text-sm font-medium hover:bg-slate-50">
-                    Filter
-                </button>
-
-                <button class="rounded-xl border px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50">
-                    Export
-                </button> -->
-
                 <button class="!rounded-xl bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700"
                     (click)="onAddDocs('')">
                     + Add Document
@@ -65,9 +57,8 @@
                     }
                 </select>
             </div>
-            <button class="btn btn-danger"
-                (click)="clearFilters()">
-              <i class="fa fa-close" style="cursor: pointer;"></i>  Clear Filters
+            <button class="btn btn-danger" (click)="clearFilters()">
+                <i class="fa fa-close" style="cursor: pointer;"></i> Clear Filters
             </button>
             <span class="text-sm !text-slate-500">
                 {{ totalItems() }} result{{ totalItems() > 1 ? 's' : '' }}
@@ -133,19 +124,50 @@
                         <td class="p-3 text-slate-600 text-sm">
                             {{ doc.created_at | date:'dd MMM yyyy, hh:mm a' }}
                         </td>
+                        <!-- Table View Actions -->
                         <td class="p-3">
                             <div class="flex items-center gap-2">
                                 @if (doc.report_download_url) {
-                                <a [href]="doc.report_download_url" target="_blank"
-                                    class="rounded-lg p-2 hover:bg-slate-100 inline-block" title="Download Report">
+                                @if (isAuthorized()) {
+                                <button (click)="handleDownload(doc, 'report')"
+                                    [disabled]="isDownloading() === doc.id + '-report'"
+                                    class="rounded-lg p-2 hover:bg-slate-100 inline-block transition-colors disabled:opacity-50"
+                                    title="Download Report">
+                                    @if (isDownloading() === doc.id + '-report') {
+                                    <span
+                                        class="inline-block w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                                    } @else {
                                     📄
-                                </a>
+                                    }
+                                </button>
+                                } @else {
+                                <button (click)="showUnauthorizedMessage()"
+                                    class="rounded-lg p-2 hover:bg-slate-100 inline-block opacity-50 cursor-not-allowed"
+                                    title="You are not authorized to download this report">
+                                    📄
+                                </button>
+                                }
                                 }
                                 @if (doc.certificate_download_url) {
-                                <a [href]="doc.certificate_download_url" target="_blank"
-                                    class="rounded-lg p-2 hover:bg-slate-100 inline-block" title="Download Certificate">
+                                @if (isAuthorized()) {
+                                <button (click)="handleDownload(doc, 'certificate')"
+                                    [disabled]="isDownloading() === doc.id + '-certificate'"
+                                    class="rounded-lg p-2 hover:bg-slate-100 inline-block transition-colors disabled:opacity-50"
+                                    title="Download Certificate">
+                                    @if (isDownloading() === doc.id + '-certificate') {
+                                    <span
+                                        class="inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
+                                    } @else {
                                     📜
-                                </a>
+                                    }
+                                </button>
+                                } @else {
+                                <button (click)="showUnauthorizedMessage()"
+                                    class="rounded-lg p-2 hover:bg-slate-100 inline-block opacity-50 cursor-not-allowed"
+                                    title="You are not authorized to download this certificate">
+                                    📜
+                                </button>
+                                }
                                 }
                             </div>
                         </td>
@@ -164,7 +186,6 @@
         }
 
         <!-- Card View -->
-        <!-- Card View -->
         @if (viewMode() === 'card') {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 p-6">
             @if (isLoading()) {
@@ -179,8 +200,8 @@
             </div>
             } @else {
             @for (doc of documents(); track doc.id) {
-            <div
-                class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col h-full">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col h-full cursor-pointer"
+                (click)="onShowProjectDetails(doc)">
                 <!-- Header -->
                 <div class="flex items-start gap-3 p-4 pb-3">
                     <div class="flex h-12 w-12 items-center justify-center rounded-full text-xl flex-shrink-0"
@@ -209,22 +230,52 @@
                     </div>
                 </div>
 
-                <!-- Footer -->
-                <div class="px-4 py-3 mt-auto border-t border-slate-100">
+                <!-- Card View Footer -->
+                <div class="px-4 py-3 mt-auto border-t border-slate-100" (click)="$event.stopPropagation()">
                     <div class="flex items-center justify-end gap-2">
                         @if (doc.report_download_url) {
-                        <a [href]="doc.report_download_url" target="_blank"
-                            class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        @if (isAuthorized()) {
+                        <button (click)="handleDownload(doc, 'report')"
+                            [disabled]="isDownloading() === doc.id + '-report'"
+                            class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50"
                             title="Download Report">
+                            @if (isDownloading() === doc.id + '-report') {
+                            <span
+                                class="inline-block w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                            } @else {
+                            📄
+                            }
+                            Report
+                        </button>
+                        } @else {
+                        <button (click)="showUnauthorizedMessage()"
+                            class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed opacity-50"
+                            title="You are not authorized to download this report">
                             📄 Report
-                        </a>
+                        </button>
+                        }
                         }
                         @if (doc.certificate_download_url) {
-                        <a [href]="doc.certificate_download_url" target="_blank"
-                            class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        @if (isAuthorized()) {
+                        <button (click)="handleDownload(doc, 'certificate')"
+                            [disabled]="isDownloading() === doc.id + '-certificate'"
+                            class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
                             title="Download Certificate">
+                            @if (isDownloading() === doc.id + '-certificate') {
+                            <span
+                                class="inline-block w-3 h-3 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
+                            } @else {
+                            📜
+                            }
+                            Certificate
+                        </button>
+                        } @else {
+                        <button (click)="showUnauthorizedMessage()"
+                            class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed opacity-50"
+                            title="You are not authorized to download this certificate">
                             📜 Certificate
-                        </a>
+                        </button>
+                        }
                         }
                     </div>
                 </div>
