@@ -21,7 +21,9 @@ export class AuthService {
 
   private authRefreshTimeout: any;
   isRefreshing = signal(false);
-  private isLoggingOut = false; // Prevent multiple logout calls
+  private isLoggingOut = false;
+  private isRefreshingToken = false;
+  private redirectingToLogin = false;
 
   login(payload: any): Observable<any> {
     let url = API_CONSTANT.login;
@@ -50,6 +52,11 @@ export class AuthService {
   }
 
   async refreshToken() {
+    // Prevent multiple refresh attempts
+    if (this.isRefreshingToken) {
+      return;
+    }
+    
     try {
       const refreshToken: any = await this.storage.getItem('aaa-user');
       if (!refreshToken) {
@@ -57,13 +64,18 @@ export class AuthService {
         return;
       }
       
+      this.isRefreshingToken = true;
       this.isRefreshing.set(true);
+      
       let payload = {
         refresh_token: refreshToken?.refresh_token
       };
       
       this.refreshTokenRequest(payload).subscribe({
         next: (res: any) => {
+          this.isRefreshingToken = false;
+          this.isRefreshing.set(false);
+          
           if (res?.body?.code === 200) {
             const tokens = res?.body;
             this.cookieService.set('aaa-token', tokens.access_token, {
@@ -77,20 +89,50 @@ export class AuthService {
             }
             this.startTimer(tokens.expires_in);
           } else {
+            // Refresh token failed - clear session
             this.performClientCleanup();
           }
         },
         error: (err) => {
+          this.isRefreshingToken = false;
+          this.isRefreshing.set(false);
           console.error('Refresh token error:', err);
           this.performClientCleanup();
         }
       });
     } catch (error) {
+      this.isRefreshingToken = false;
+      this.isRefreshing.set(false);
       console.error('Refresh token error:', error);
       this.performClientCleanup();
-    } finally {
-      this.isRefreshing.set(false);
     }
+  }
+
+  // Check if token is valid (not expired)
+  isTokenValid(): boolean {
+    const token = this.cookieService.get('aaa-token');
+    if (!token) return false;
+    
+    // Check if token is expired by decoding it
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const expired = payload.exp * 1000 < Date.now();
+      if (expired) {
+        // Token expired, clear it
+        this.clearInvalidToken();
+        return false;
+      }
+      return true;
+    } catch {
+      // Invalid token format
+      this.clearInvalidToken();
+      return false;
+    }
+  }
+
+  clearInvalidToken() {
+    this.cookieService.delete('aaa-token', '/');
+    this.storage.removeItem('aaa-user');
   }
 
   async logoutUser() {
@@ -111,11 +153,12 @@ export class AuthService {
           this.performClientCleanup();
         } else {
           this.notificationService.error(res?.body?.message || 'Logout failed');
+          this.performClientCleanup();
         }
       },
       error: (err) => {
         console.error('Logout error:', err);
-        this.notificationService.error(err?.error?.message || 'Logout error');
+        this.performClientCleanup();
       }
     });
   }
@@ -128,7 +171,18 @@ export class AuthService {
     clearTimeout(this.authRefreshTimeout);
     this.storage.clear();
     this.cookieService.delete('aaa-token', '/');
-    this.isLoggingOut = false; 
+    this.isLoggingOut = false;
+    this.isRefreshingToken = false;
+    this.isRefreshing.set(false);
+    this.redirectingToLogin = false;
     this.router.navigate(['/login']);
+  }
+
+  // Check if we should allow API calls
+  canMakeApiCalls(): boolean {
+    if (this.isRefreshingToken) return false;
+    if (this.isLoggingOut) return false;
+    if (this.redirectingToLogin) return false;
+    return true;
   }
 }

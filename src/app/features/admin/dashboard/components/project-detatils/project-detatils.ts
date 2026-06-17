@@ -5,7 +5,6 @@ import { DocumentService } from '../../services/document-service';
 import { ProjectViewDetails } from '../project-view-details/project-view-details';
 import { BsModalRef, BsModalService, ModalOptions } from 'ngx-bootstrap/modal';
 import { CookieService } from 'ngx-cookie-service';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
 
 interface Finding {
@@ -32,7 +31,6 @@ export class ProjectDetails implements OnInit {
   private router = inject(Router);
   private modalService = inject(BsModalService);
   private cookieService = inject(CookieService);
-  private http = inject(HttpClient);
   private notification = inject(NotificationService);
 
   // Pagination signals
@@ -62,15 +60,15 @@ export class ProjectDetails implements OnInit {
   // Computed filtered findings based on severity and search
   filteredFindings = computed(() => {
     let findings = this.allFindings();
-    
+
     const severity = this.selectedSeverityFilter();
     if (severity) {
       findings = findings.filter(f => f.severity === severity);
     }
-    
+
     const query = this.searchQuery().toLowerCase().trim();
     if (query) {
-      findings = findings.filter(f => 
+      findings = findings.filter(f =>
         f.vulnerability_title?.toLowerCase().includes(query) ||
         f.affected_asset?.toLowerCase().includes(query) ||
         f.cve_cwe?.toLowerCase().includes(query) ||
@@ -79,7 +77,7 @@ export class ProjectDetails implements OnInit {
         f.reference?.toLowerCase().includes(query)
       );
     }
-    
+
     return findings;
   });
 
@@ -121,9 +119,8 @@ export class ProjectDetails implements OnInit {
     this.notification.error('You are not authorized to download this certificate. Please login again.');
   }
 
-  // Handle certificate download with token check
+  // Handle certificate download with token in URL
   handleCertificateDownload(cert: any) {
-    // Check if user has token
     if (!this.isAuthorized()) {
       this.showUnauthorizedMessage();
       this.router.navigate(['/login']);
@@ -144,67 +141,20 @@ export class ProjectDetails implements OnInit {
     }
 
     this.isDownloading.set(cert.id);
+    const separator = url.includes('?') ? '&' : '?';
+    const downloadUrl = `${url}${separator}token=${encodeURIComponent(token)}`;
 
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/octet-stream, application/json'
-    });
+    const newWindow = window.open(downloadUrl, '_blank');
+    setTimeout(() => {
+      this.isDownloading.set(null);
+    }, 2000);
 
-    this.http.get(url, { headers, responseType: 'blob', observe: 'response' }).subscribe({
-      next: (response: any) => {
-        this.isDownloading.set(null);
-        let fileName = this.getFileNameFromResponse(response, url, 'certificate');
-        const blob = new Blob([response.body], {
-          type: response.body.type || 'application/octet-stream'
-        });
-        const blobUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
-
-        this.notification.success('Certificate downloaded successfully');
-      },
-      error: (err) => {
-        this.isDownloading.set(null);
-        console.error('Download error:', err);
-        if (err.status === 401) {
-          this.notification.error('Session expired. Please login again.');
-          this.router.navigate(['/login']);
-        } else if (err.status === 403) {
-          this.notification.error('You do not have permission to download this certificate.');
-        } else {
-          this.notification.error('Failed to download certificate. Please try again.');
-        }
-      }
-    });
-  }
-
-  getFileNameFromResponse(response: any, url: string, type: string): string {
-    const contentDisposition = response.headers.get('content-disposition');
-    if (contentDisposition) {
-      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
-      if (matches && matches[1]) {
-        return matches[1].replace(/['"]/g, '');
-      }
-    }
-    return this.getFileNameFromUrl(url, type);
-  }
-
-  getFileNameFromUrl(url: string, type: string): string {
-    try {
-      const parts = url.split('/');
-      let fileName = parts[parts.length - 1] || `${type}.pdf`;
-      fileName = fileName.split('?')[0];
-      if (!fileName.includes('.')) {
-        fileName = `${fileName}.pdf`;
-      }
-      return fileName;
-    } catch {
-      return `${type}_${new Date().getTime()}.pdf`;
+    if (newWindow) {
+      this.notification.success('Certificate download started');
+    } else {
+      // If popup blocked, try direct navigation
+      window.location.href = downloadUrl;
+      this.notification.success('Certificate download started');
     }
   }
 

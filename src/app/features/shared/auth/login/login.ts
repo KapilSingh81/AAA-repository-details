@@ -134,14 +134,21 @@ export class Login {
 
   private async checkExistingSession() {
     const token = this.cookieService.get('aaa-token');
-    const user: any = await this.storageService.getItem('aaa-user');
-    
+    const user: any = await this.storageService.getItem('aaa-user');    
     if (token && user) {
-      try {
-        this.redirectByRole();
-      } catch (error) {
+      const isValid = this.loginService.isTokenValid();      
+      if (isValid) {
+        try {
+          this.redirectByRole();
+          return;
+        } catch (error) {
+          this.clearSessionSilently();
+        }
+      } else {
         this.clearSessionSilently();
       }
+    } else {
+      this.clearSessionSilently();
     }
   }
 
@@ -149,7 +156,6 @@ export class Login {
     clearTimeout(this.loginService['authRefreshTimeout']);
     this.storageService.clear();
     this.cookieService.delete('aaa-token', '/');
-    this.router.navigate(['/login']);
   }
 
   clearSession() {

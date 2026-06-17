@@ -9,7 +9,6 @@ import { Subject } from 'rxjs';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
 import { CookieService } from 'ngx-cookie-service';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 
 interface Document {
   id: string;
@@ -35,7 +34,6 @@ export class ManageDashboard {
   private router = inject(Router);
   private notification = inject(NotificationService);
   private cookieService = inject(CookieService);
-  private http = inject(HttpClient);
 
   viewMode = signal<'table' | 'card'>('table');
   currentPage = signal(1);
@@ -139,9 +137,8 @@ export class ManageDashboard {
     this.notification.error('You are not authorized to download this document. Please login again.');
   }
 
-  // Handle download with token check
+  // Handle download with token in URL (simplest approach)
   handleDownload(doc: Document, type: 'report' | 'certificate') {
-    // Check if user has token
     if (!this.isAuthorized()) {
       this.showUnauthorizedMessage();
       this.router.navigate(['/login']);
@@ -154,75 +151,24 @@ export class ManageDashboard {
       this.router.navigate(['/login']);
       return;
     }
-
     const url = type === 'report' ? doc.report_download_url : doc.certificate_download_url;
     if (!url) {
       this.notification.error('Download URL not available');
       return;
     }
-
     this.isDownloading.set(`${doc.id}-${type}`);
+    const separator = url.includes('?') ? '&' : '?';
+    const downloadUrl = `${url}${separator}token=${encodeURIComponent(token)}`;
+    const newWindow = window.open(downloadUrl, '_blank');
+    setTimeout(() => {
+      this.isDownloading.set(null);
+    }, 2000);
 
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/octet-stream, application/json'
-    });
-
-    this.http.get(url, { headers, responseType: 'blob', observe: 'response' }).subscribe({
-      next: (response: any) => {
-        this.isDownloading.set(null);
-        let fileName = this.getFileNameFromResponse(response, url, type);
-        const blob = new Blob([response.body], {
-          type: response.body.type || 'application/octet-stream'
-        });
-        const blobUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
-
-        this.notification.success(`${type === 'report' ? 'Report' : 'Certificate'} downloaded successfully`);
-      },
-      error: (err) => {
-        this.isDownloading.set(null);
-        console.error('Download error:', err);
-        if (err.status === 401) {
-          this.notification.error('Session expired. Please login again.');
-          this.router.navigate(['/login']);
-        } else if (err.status === 403) {
-          this.notification.error('You do not have permission to download this document.');
-        } else {
-          this.notification.error('Failed to download document. Please try again.');
-        }
-      }
-    });
-  }
-
-  getFileNameFromResponse(response: any, url: string, type: string): string {
-    const contentDisposition = response.headers.get('content-disposition');
-    if (contentDisposition) {
-      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
-      if (matches && matches[1]) {
-        return matches[1].replace(/['"]/g, '');
-      }
-    }
-    return this.getFileNameFromUrl(url, type);
-  }
-
-  getFileNameFromUrl(url: string, type: string): string {
-    try {
-      const parts = url.split('/');
-      let fileName = parts[parts.length - 1] || `${type}.pdf`;
-      fileName = fileName.split('?')[0];
-      if (!fileName.includes('.')) {
-        fileName = `${fileName}.pdf`;
-      }
-      return fileName;
-    } catch {
-      return `${type}_${new Date().getTime()}.pdf`;
+    if (newWindow) {
+      this.notification.success(`${type === 'report' ? 'Report' : 'Certificate'} download started`);
+    } else {
+      window.location.href = downloadUrl;
+      this.notification.success(`${type === 'report' ? 'Report' : 'Certificate'} download started`);
     }
   }
 
