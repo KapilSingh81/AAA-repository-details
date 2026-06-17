@@ -1,12 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { CookieService } from 'ngx-cookie-service';
-import { Router, RouterOutlet } from '@angular/router';
+import { Router } from '@angular/router';
 import { StorageService } from '../../services/storage-service/storage.service';
 import { Footer } from "../../layout/footer/footer";
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth-service/auth-service';
 import { NotificationService } from '../../services/notification-service/notificaiton';
-
 
 @Component({
   selector: 'app-login',
@@ -23,7 +22,7 @@ export class Login {
   private router = inject(Router);
   private storageService = inject(StorageService);
   private loginService = inject(AuthService);
-  private notification = inject(NotificationService)
+  private notification = inject(NotificationService);
   
   form: any = signal({
     email: '',
@@ -69,7 +68,7 @@ export class Login {
         this.errors.update(prev => ({ ...prev, [field]: error }));
         return false;
       }
-    };
+    }
     this.errors.update(prev => ({ ...prev, [field]: null }));
     return true;
   }
@@ -78,7 +77,7 @@ export class Login {
     return Object.keys(this.validators)
       .map(field => this.validateField(field))
       .every(Boolean);
-  };
+  }
 
   ngOnInit(): void {
     this.checkExistingSession();
@@ -92,21 +91,23 @@ export class Login {
     event.preventDefault();
     if (!this.validateForm()) {
       return;
-    };
-    const formValues = this.form();
+    }
     
+    const formValues = this.form();
     const payload = {
       username: formValues.email,  
       password: formValues.password
     };
+    
     this.isLoading.set(true);
     this.loginService.login(payload).subscribe({
       next: (res: any) => {
         this.isLoading.set(false);
-        if (res?.body.code == 200) {          
+        if (res?.body?.code === 200) {          
           this.notification.success(res?.body?.message);
           const tokenExpires = new Date(res?.body?.tokenExpiredOn);
           const expiresIn = res?.body?.expires_in;
+          
           this.cookieService.set('aaa-token', res?.body?.access_token, {
             path: '/',
             secure: false,
@@ -125,26 +126,33 @@ export class Login {
         this.notification.error(err?.error?.message || 'Server error');
       }
     });
-  };
+  }
 
   redirectByRole() {
     this.router.navigateByUrl('/user/workspace');
-  };
+  }
 
   private async checkExistingSession() {
     const token = this.cookieService.get('aaa-token');
     const user: any = await this.storageService.getItem('aaa-user');
+    
     if (token && user) {
       try {
         this.redirectByRole();
       } catch (error) {
-        this.clearSession();
-        this.router.navigate(['/login']);
+        this.clearSessionSilently();
       }
     }
-  };
+  }
+
+  private clearSessionSilently() {
+    clearTimeout(this.loginService['authRefreshTimeout']);
+    this.storageService.clear();
+    this.cookieService.delete('aaa-token', '/');
+    this.router.navigate(['/login']);
+  }
 
   clearSession() {
-    this.loginService.logoutUser()
+    this.loginService.logoutUser();
   }
 }

@@ -4,6 +4,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DocumentService } from '../../services/document-service';
 import { ProjectViewDetails } from '../project-view-details/project-view-details';
 import { BsModalRef, BsModalService, ModalOptions } from 'ngx-bootstrap/modal';
+import { CookieService } from 'ngx-cookie-service';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
 
 interface Finding {
   sequence: number;
@@ -28,6 +31,9 @@ export class ProjectDetails implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private modalService = inject(BsModalService);
+  private cookieService = inject(CookieService);
+  private http = inject(HttpClient);
+  private notification = inject(NotificationService);
 
   // Pagination signals
   currentPage = signal(1);
@@ -42,6 +48,7 @@ export class ProjectDetails implements OnInit {
   tools = signal<any[]>([]);
   certificates = signal<any[]>([]);
   documentId = signal<string>('');
+  isDownloading = signal<string | null>(null);
 
   // Filter signals
   selectedSeverityFilter = signal<string | null>(null);
@@ -56,13 +63,11 @@ export class ProjectDetails implements OnInit {
   filteredFindings = computed(() => {
     let findings = this.allFindings();
     
-    // Filter by severity
     const severity = this.selectedSeverityFilter();
     if (severity) {
       findings = findings.filter(f => f.severity === severity);
     }
     
-    // Filter by search query
     const query = this.searchQuery().toLowerCase().trim();
     if (query) {
       findings = findings.filter(f => 
@@ -78,7 +83,6 @@ export class ProjectDetails implements OnInit {
     return findings;
   });
 
-  // Computed paginated findings
   paginatedFindings = computed(() => {
     const start = (this.currentPage() - 1) * this.pageSize();
     const end = start + this.pageSize();
@@ -107,12 +111,108 @@ export class ProjectDetails implements OnInit {
     }
   }
 
+  // Authorization Methods - Only checks for token
+  isAuthorized(): boolean {
+    const token = this.cookieService.get('aaa-token');
+    return !!(token && token.length > 0);
+  }
+
+  showUnauthorizedMessage() {
+    this.notification.error('You are not authorized to download this certificate. Please login again.');
+  }
+
+  // Handle certificate download with token check
+  handleCertificateDownload(cert: any) {
+    // Check if user has token
+    if (!this.isAuthorized()) {
+      this.showUnauthorizedMessage();
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const token = this.cookieService.get('aaa-token');
+    if (!token) {
+      this.notification.error('Session expired. Please login again.');
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const url = cert?.download_url;
+    if (!url) {
+      this.notification.error('Download URL not available');
+      return;
+    }
+
+    this.isDownloading.set(cert.id);
+
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/octet-stream, application/json'
+    });
+
+    this.http.get(url, { headers, responseType: 'blob', observe: 'response' }).subscribe({
+      next: (response: any) => {
+        this.isDownloading.set(null);
+        let fileName = this.getFileNameFromResponse(response, url, 'certificate');
+        const blob = new Blob([response.body], {
+          type: response.body.type || 'application/octet-stream'
+        });
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+
+        this.notification.success('Certificate downloaded successfully');
+      },
+      error: (err) => {
+        this.isDownloading.set(null);
+        console.error('Download error:', err);
+        if (err.status === 401) {
+          this.notification.error('Session expired. Please login again.');
+          this.router.navigate(['/login']);
+        } else if (err.status === 403) {
+          this.notification.error('You do not have permission to download this certificate.');
+        } else {
+          this.notification.error('Failed to download certificate. Please try again.');
+        }
+      }
+    });
+  }
+
+  getFileNameFromResponse(response: any, url: string, type: string): string {
+    const contentDisposition = response.headers.get('content-disposition');
+    if (contentDisposition) {
+      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+      if (matches && matches[1]) {
+        return matches[1].replace(/['"]/g, '');
+      }
+    }
+    return this.getFileNameFromUrl(url, type);
+  }
+
+  getFileNameFromUrl(url: string, type: string): string {
+    try {
+      const parts = url.split('/');
+      let fileName = parts[parts.length - 1] || `${type}.pdf`;
+      fileName = fileName.split('?')[0];
+      if (!fileName.includes('.')) {
+        fileName = `${fileName}.pdf`;
+      }
+      return fileName;
+    } catch {
+      return `${type}_${new Date().getTime()}.pdf`;
+    }
+  }
+
   getProjectDetailsData() {
     this.isLoading.set(true);
     this.documentService.documentDetailsdata(this.documentId()).subscribe({
       next: (res: any) => {
         this.isLoading.set(false);
-        console.log('Document Details:', res);
         this.documentData.set(res?.body);
         this.extractData(res?.body);
         this.currentPage.set(1);

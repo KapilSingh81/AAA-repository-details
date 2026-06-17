@@ -482,6 +482,7 @@
         }
 
         <!-- Certificates Section -->
+        <!-- Certificates Section -->
         @if (certificates() && certificates().length > 0) {
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 overflow-hidden">
             <div class="border-b border-slate-200 px-4 py-3 bg-slate-50">
@@ -503,10 +504,24 @@
                         <p class="text-xs text-slate-500">Issued by: {{ cert.issued_by || 'N/A' }}</p>
                     </div>
                     @if (cert.download_url) {
-                    <a [href]="cert.download_url" target="_blank"
-                        class="text-emerald-600 hover:text-emerald-800 text-sm font-medium flex-shrink-0 ml-2">
+                    @if (isAuthorized()) {
+                    <button (click)="handleCertificateDownload(cert)" [disabled]="isDownloading() === cert.id"
+                        class="text-emerald-600 hover:text-emerald-800 text-sm font-medium flex-shrink-0 ml-2 disabled:opacity-50 transition-colors"
+                        title="Download Certificate">
+                        @if (isDownloading() === cert.id) {
+                        <span
+                            class="inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></span>
+                        } @else {
                         Download →
-                    </a>
+                        }
+                    </button>
+                    } @else {
+                    <button (click)="showUnauthorizedMessage()"
+                        class="text-slate-400 text-sm font-medium flex-shrink-0 ml-2 opacity-50 cursor-not-allowed"
+                        title="You are not authorized to download this certificate">
+                        Download →
+                    </button>
+                    }
                     }
                 </div>
                 }

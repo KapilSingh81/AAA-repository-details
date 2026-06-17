@@ -21,6 +21,7 @@ export class AuthService {
 
   private authRefreshTimeout: any;
   isRefreshing = signal(false);
+  private isLoggingOut = false; // Prevent multiple logout calls
 
   login(payload: any): Observable<any> {
     let url = API_CONSTANT.login;
@@ -51,52 +52,83 @@ export class AuthService {
   async refreshToken() {
     try {
       const refreshToken: any = await this.storage.getItem('aaa-user');
-      if (!refreshToken) return;
+      if (!refreshToken) {
+        this.performClientCleanup();
+        return;
+      }
+      
       this.isRefreshing.set(true);
       let payload = {
         refresh_token: refreshToken?.refresh_token
-      }
-      this.refreshTokenRequest(payload).subscribe((res: any) => {
-        const tokens = res?.body;
-        document.cookie = `aaa-token=${tokens.access_token}`;
-        if (tokens.refresh_token) {
-          this.storage.setItem('aaa-user', tokens);
+      };
+      
+      this.refreshTokenRequest(payload).subscribe({
+        next: (res: any) => {
+          if (res?.body?.code === 200) {
+            const tokens = res?.body;
+            this.cookieService.set('aaa-token', tokens.access_token, {
+              path: '/',
+              secure: false,
+              sameSite: 'Lax',
+              expires: new Date(tokens.tokenExpiredOn),
+            });
+            if (tokens.refresh_token) {
+              this.storage.setItem('aaa-user', tokens);
+            }
+            this.startTimer(tokens.expires_in);
+          } else {
+            this.performClientCleanup();
+          }
+        },
+        error: (err) => {
+          console.error('Refresh token error:', err);
+          this.performClientCleanup();
         }
-        this.startTimer(tokens.expires_in);
-      })
+      });
     } catch (error) {
-      this.logoutUser();
+      console.error('Refresh token error:', error);
+      this.performClientCleanup();
     } finally {
       this.isRefreshing.set(false);
     }
   }
 
   async logoutUser() {
+    if (this.isLoggingOut) {
+      return;
+    }
+    
+    this.isLoggingOut = true;    
     const user: any = await this.storage.getItem('aaa-user');
     const payload = {
       refresh_token: user?.refresh_token || null
     };
-    this.logout(payload)
-      .subscribe({
-        next: (res: any) => {
-          if (res?.body?.code === 200) {
-            this.notificationService.success(res?.body?.message);
-            this.performClientCleanup();
-          } else {
-            this.notificationService.error(res?.body?.message || 'Logout failed');
-          }
-        },
-        error: (err) => {
-          this.notificationService.error(err?.error?.message || 'Logout error');
+    
+    this.logout(payload).subscribe({
+      next: (res: any) => {
+        if (res?.body?.code === 200) {
+          this.notificationService.success(res?.body?.message);
           this.performClientCleanup();
+        } else {
+          this.notificationService.error(res?.body?.message || 'Logout failed');
         }
-      });
+      },
+      error: (err) => {
+        console.error('Logout error:', err);
+        this.notificationService.error(err?.error?.message || 'Logout error');
+      }
+    });
+  }
+
+  clearSessionSilently() {
+    this.performClientCleanup();
   }
 
   private performClientCleanup() {
     clearTimeout(this.authRefreshTimeout);
     this.storage.clear();
     this.cookieService.delete('aaa-token', '/');
+    this.isLoggingOut = false; 
     this.router.navigate(['/login']);
   }
 }

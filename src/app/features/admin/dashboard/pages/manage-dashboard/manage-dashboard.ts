@@ -88,21 +88,21 @@ export class ManageDashboard {
   };
 
   private auditBadgeMap: { [key: string]: string } = {
-    'web': 'bg-blue-100 text-blue-800',
-    'vapt': 'bg-purple-100 text-purple-800',
-    'comprehensive': 'bg-indigo-100 text-indigo-800',
-    'mobile': 'bg-green-100 text-green-800',
-    'source_code': 'bg-cyan-100 text-cyan-800',
-    'web_api': 'bg-teal-100 text-teal-800',
-    'audit': 'bg-blue-100 text-blue-800',
-    'compliance': 'bg-green-100 text-green-800',
-    'security': 'bg-red-100 text-red-800',
-    'penetration': 'bg-orange-100 text-orange-800',
-    'vulnerability': 'bg-yellow-100 text-yellow-800',
-    'project': 'bg-indigo-100 text-indigo-800',
-    'report': 'bg-amber-100 text-amber-800',
-    'certificate': 'bg-emerald-100 text-emerald-800',
-    'default': 'bg-gray-100 text-gray-800'
+    'web': 'bg-blue-500 text-blue-800',
+    'vapt': 'bg-purple-500 text-purple-800',
+    'comprehensive': 'bg-indigo-500 text-indigo-800',
+    'mobile': 'bg-green-500 text-green-800',
+    'source_code': 'bg-cyan-500 text-cyan-800',
+    'web_api': 'bg-teal-500 text-teal-800',
+    'audit': 'bg-blue-500 text-blue-800',
+    'compliance': 'bg-green-500 text-green-800',
+    'security': 'bg-red-500 text-red-800',
+    'penetration': 'bg-orange-500 text-orange-800',
+    'vulnerability': 'bg-yellow-500 text-yellow-800',
+    'project': 'bg-indigo-500 text-indigo-800',
+    'report': 'bg-amber-500 text-amber-800',
+    'certificate': 'bg-emerald-500 text-emerald-800',
+    'default': 'bg-gray-500 text-gray-800'
   };
 
   private allDocuments = signal<Document[]>([]);
@@ -235,7 +235,6 @@ export class ManageDashboard {
 
   getDocumentList() {
     this.isLoading.set(true);
-
     let payload: any = {
       uuid: null,
       name: this.searchName() || null,

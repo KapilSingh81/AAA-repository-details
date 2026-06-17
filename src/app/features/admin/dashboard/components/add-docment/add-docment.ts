@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, inject, Output, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { CommonService } from '../../../../shared/services/common-services/common-service';
@@ -13,6 +13,8 @@ import { NotificationService } from '../../../../shared/services/notification-se
   styleUrl: './add-docment.scss',
 })
 export class AddDocment {
+  @Output() mapdata = new EventEmitter();
+
   private fb = inject(FormBuilder);
   private modalService = inject(BsModalService);
   private commonService = inject(CommonService);
@@ -145,15 +147,16 @@ export class AddDocment {
     if (this.selectedCertificate()) {
       formData.append('certificate', this.selectedCertificate()!);
     }
-
-    // Send to API
     this.documentService.addUploadDoumnet(formData).subscribe({
       next: (res) => {
-        console.log(res);
-        
-        this.isLoading.set(false);
-        this.notificationService.success('Document uploaded successfully');
-        this.modalService.hide();
+        this.isLoading.set(false);        
+        if(res?.body?.code == 200) {
+          this.notificationService.success(res?.body?.message);
+          this.modalService.hide();
+          this.mapdata.emit();
+        } else {
+          this.notificationService.error(res?.error?.message);
+        }     
       },
       error: (err) => {
          console.log(err);
