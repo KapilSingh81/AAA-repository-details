@@ -1,0 +1,55 @@
+<div class="flex items-center justify-center min-h-screen">
+    <div class="absolute inset-0 bg-cover bg-center bg-no-repeat" style="
+    background-image: url('images/banner.png');
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    background-position: center;
+  "></div>
+    <div class="w-[400px] max-w-[90%] rounded-2xl p-8 shadow-2xl" style="
+       background: rgba(26, 36, 45, 0.5);
+       backdrop-filter: blur(0px);
+       -webkit-backdrop-filter: blur(12px);
+     ">
+        <div class="flex justify-center mb-6">
+            <img src="images/logo.png" class="w-40" />
+        </div>
+        <form class="flex flex-col gap-3">
+            <div>
+                <input type="text" placeholder="Email" autocomplete="username" class="form-control mb-1"
+                    [value]="form().email || null" (input)="setField('email', $any($event.target).value)"
+                    [class.border-red-500]="errors()['email']" />
+                @if (errors()['email'] && touched()['email']) {
+                <div class="text-white !text-sm">
+                    {{ errors()['email'] }}
+                </div>
+                }
+            </div>
+            <div class="relative">
+                <input [type]="showPassword() ? 'text' : 'password'" placeholder="Password"
+                    class="form-control pr-10 mb-1" [value]="form().password"
+                    (input)="setField('password', $any($event.target).value)"
+                    [class.border-red-500]="errors()['password']" />
+                <i class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer fa-solid"
+                    [class.fa-eye]="showPassword()" [class.fa-eye-slash]="!showPassword()"
+                    (click)="togglePasswordVisibility()">
+                </i>
+                @if (errors()['password'] && touched()['password']) {
+                <div class="text-white text-sm">
+                    {{ errors()['password'] }}
+                </div>
+                }
+            </div>
+            <button class="btn btn-success" type="submit" [disabled]="this.isLoading()" (click)="onSubmit($event)">
+                {{this.isLoading() ? 'Login...' : 'Login'}}
+            </button>
+        </form>
+        <footer class="text-white mt-2 text-center">
+            © {{ currentYear() }} All rights reserved.
+            <span class="mx-1 text-white">|</span>
+            Designed & Developed by
+            <a href="https://www.skylabstech.com/" target="_blank" class="ml-1 text-blue-300 !underline text-white">
+                SSIPL
+            </a>
+        </footer>
+    </div>
+</div>

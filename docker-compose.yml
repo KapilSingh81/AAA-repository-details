@@ -1,0 +1,15 @@
+services:
+  angular:
+    build: .
+    container_name: AAA-repository
+
+    restart: unless-stopped
+
+    ports:
+      - "4204:4204"
+
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+    command: npm start -- --host 0.0.0.0 --port 4204

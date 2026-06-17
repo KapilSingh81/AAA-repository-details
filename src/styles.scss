@@ -1,0 +1,55 @@
+@use 'tailwindcss';
+@use 'ngx-toastr/toastr';
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');/* You can add global styles to this file, and also import other style files */
+
+
+ *{
+  box-sizing: border-box;
+  font-family: 'Poppins';
+  font-size: 14px;
+}
+
+body {
+  background-color: #f5f5f9 !important;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  text-decoration: none !important;
+  color: rgb(34 48 62 / 90%) !important;
+}
+
+ul {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+li {
+  list-style-type: none;
+}
+
+.toast-container {
+  z-index: 9999999 !important;
+}
+
+.button-container {
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    gap: 10px;
+}
+
+.modal-header {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-align: start;
+    align-items: flex-start;
+    -ms-flex-pack: justify;
+    justify-content: space-between;
+    padding: 1rem 1rem;
+    border-bottom: 1px solid #dee2e6;
+    border-top-left-radius: calc(.3rem - 1px);
+    border-top-right-radius: calc(.3rem - 1px);
+}

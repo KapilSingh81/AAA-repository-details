@@ -1,0 +1,160 @@
+<div class="flex modal-header text-center">
+    <h5>
+        Upload Document
+    </h5>
+    <div class="close-modal" (click)="close($event)">
+        <i class="fa fa-close" style="cursor: pointer;"></i>
+    </div>
+</div>
+
+<div class="modal-body">
+    <form [formGroup]="documentForm" (ngSubmit)="onSubmit()">
+        <div class="row">
+            <!-- Project Name -->
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Project Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Project Name"
+                    formControlName="project_name" />
+                @if (documentForm.get('project_name')?.touched && documentForm.get('project_name')?.invalid) {
+                <div class="text-danger">
+                    @if (documentForm.get('project_name')?.errors?.['required']) {
+                    <div>Project name is required</div>
+                    }
+                    @if (documentForm.get('project_name')?.errors?.['minlength']) {
+                    <div>Minimum 3 characters required</div>
+                    }
+                </div>
+                }
+            </div>
+
+            <!-- Client Name -->
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Client Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Client Name" formControlName="client_name" />
+                @if (documentForm.get('client_name')?.touched && documentForm.get('client_name')?.invalid) {
+                <div class="text-danger">
+                    @if (documentForm.get('client_name')?.errors?.['required']) {
+                    <div>Client name is required</div>
+                    }
+                    @if (documentForm.get('client_name')?.errors?.['minlength']) {
+                    <div>Minimum 3 characters required</div>
+                    }
+                </div>
+                }
+            </div>
+
+            <!-- Document Type -->
+
+
+            <!-- Document Upload -->
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Document <span class="text-danger">*</span></label>
+                <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-indigo-400 transition-colors cursor-pointer"
+                    [ngClass]="{
+                        'border-indigo-500 bg-indigo-50': isDragging()
+                    }" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)"
+                    (drop)="onDrop($event, 'document')" (click)="documentInput.click()">
+                    <input #documentInput type="file" (change)="onFileSelected($event, 'document')" class="hidden"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg" />
+
+                    <i class="fas fa-file-upload fa-2x text-slate-400 mb-2"></i>
+
+                    @if (!selectedDocument()) {
+                    <p class="text-sm text-slate-600">
+                        <span class="text-indigo-600 font-medium">Browse</span> or drop your document here
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Supported: PDF, Word, Excel, PowerPoint, Images
+                    </p>
+                    } @else {
+                    <div class="flex items-center justify-center gap-3">
+                        <span class="text-sm font-medium text-slate-700">{{ selectedDocument()?.name }}</span>
+                        <span class="text-xs text-slate-500">({{ formatFileSize(selectedDocument()?.size || 0)
+                            }})</span>
+                        <button type="button" class="text-red-500 hover:text-red-700"
+                            (click)="removeFile($event, 'document')">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    }
+                </div>
+                @if (documentForm.get('document')?.touched && documentForm.get('document')?.invalid) {
+                <div class="text-danger">
+                    <div>Document is required</div>
+                </div>
+                }
+            </div>
+
+            <!-- Certificate Upload -->
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Certificate <span class="text-danger">*</span></label>
+                <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-indigo-400 transition-colors cursor-pointer"
+                    [ngClass]="{
+                        'border-indigo-500 bg-indigo-50': isDragging()
+                    }" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)"
+                    (drop)="onDrop($event, 'certificate')" (click)="certificateInput.click()">
+                    <input #certificateInput type="file" (change)="onFileSelected($event, 'certificate')" class="hidden"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg" />
+
+                    <i class="fas fa-certificate fa-2x text-slate-400 mb-2"></i>
+
+                    @if (!selectedCertificate()) {
+                    <p class="text-sm text-slate-600">
+                        <span class="text-indigo-600 font-medium">Browse</span> or drop your certificate here
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Supported: PDF, Word, Excel, PowerPoint, Images
+                    </p>
+                    } @else {
+                    <div class="flex items-center justify-center gap-3">
+                        <span class="text-sm font-medium text-slate-700">{{ selectedCertificate()?.name }}</span>
+                        <span class="text-xs text-slate-500">({{ formatFileSize(selectedCertificate()?.size || 0)
+                            }})</span>
+                        <button type="button" class="text-red-500 hover:text-red-700"
+                            (click)="removeFile($event, 'certificate')">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                    }
+                </div>
+                @if (documentForm.get('certificate')?.touched && documentForm.get('certificate')?.invalid) {
+                <div class="text-danger">
+                    <div>Certificate is required</div>
+                </div>
+                }
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Document Type <span class="text-danger">*</span></label>
+                <select class="form-select" formControlName="type">
+                    <option value="">Select Document Type</option>
+                    @for (type of documentTypeList; track type) {
+                    <option value="{{type}}">
+                        {{type}}
+                    </option>
+                    }
+                </select>
+                @if (documentForm.get('type')?.touched && documentForm.get('type')?.invalid) {
+                <div class="text-danger">
+                    <div>Document type is required</div>
+                </div>
+                }
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="button-container">
+                <button class="btn btn-success" type="submit">
+                    @if (isLoading()) {
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    Uploading...
+                    } @else {
+                    <i class="fas fa-upload me-1"></i> Upload
+                    }
+                </button>
+                <button class="btn btn-danger" type="button" (click)="close($event)">
+                    Clear
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

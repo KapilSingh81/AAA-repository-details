@@ -1,0 +1,108 @@
+<div class="min-h-screen flex flex-col">
+    <div class="w-full shadow-sm !bg-white sticky top-0 z-[99] border-b border-transparent transition-all duration-300">
+        <header class="hidden lg:grid grid-cols-5 items-center gap-4 px-4 py-2 lg:px-10">
+            <div class="flex items-center gap-3">
+                <img class="w-20 h-10" src="images/logo.png" alt="Logo">
+            </div>
+            <div class="col-span-3">
+                <ul class="flex items-center gap-2">
+                    @for(data of menu() ; track data?.name) {
+                    @if(!data?.subNav?.length) {
+                            <li class="group flex items-center px-4 py-2.5 rounded-md cursor-pointer" [ngClass]="{
+                            'bg-indigo-600 !text-white': data?.isActive,
+                            'hover:bg-indigo-600': !data?.isActive
+                            }">
+
+                        <a [routerLink]="data.path" class="flex items-center gap-2" [ngClass]="{
+                                '!text-white': data?.isActive,
+                                '!text-[#4f39f6] group-hover:text-white': !data?.isActive
+                                }">
+
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" class="w-5 h-5" [ngClass]="{
+                                '!text-white': data?.isActive,
+                                '!text-[#4f39f6] group-hover:!text-white': !data?.isActive
+                                }">
+                                <path [attr.d]="data.iconPath"></path>
+                            </svg>
+
+                            <span [ngClass]="{
+                                '!text-white': data?.isActive,
+                                '!text-[#4f39f6] group-hover:!text-white': !data?.isActive
+                                }">
+                                {{ data?.name }}
+                            </span>
+
+                        </a>
+                    </li>
+                    } @else {
+                    <li class="relative group px-4 py-2.5 rounded-md cursor-pointer transition-all duration-300"
+                        [ngClass]="{
+                        'bg-[#d49b13]': data?.isActive,
+                        'bg-transparent hover:bg-[#f5f5f9]': !data.isActive
+                    }">
+                        <a class="cursor-pointer flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                [attr.stroke]="data.isActive ? 'white' : '#d49b13'" class="w-5 h-5">
+                                <path [attr.d]="data.iconPath"></path>
+                            </svg>
+                            <span class="text-sm" [class.text-white]="data?.isActive"
+                                [class.text-[#d49b13]]="!data?.isActive">{{ data?.name }}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="size-5 ml-1" [class.text-white]="data?.isActive"
+                                [class.text-[#d49b13]]="!data?.isActive">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </a>
+                        <ul class="absolute left-0 hidden group-hover:block transition-all duration-200 
+                                   bg-white shadow-lg rounded-lg mt-2 !w-64 z-50 border border-gray-100">
+                            @for(subMenu of data?.subNav ; track subMenu?.name) {
+                            <li class="px-4 py-2.5 cursor-pointer hover:bg-gray-50 border-b border-gray-50 last:border-b-0 transition-all duration-300"
+                                [ngClass]="{
+                                    'bg-[#d49b13]': subMenu?.isActive,
+                                    'bg-transparent': !subMenu?.isActive
+                                }" (click)="onMenuItemClick(subMenu, $event)">
+                                <a [routerLink]="subMenu.path" class="cursor-pointer flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" [attr.stroke]="subMenu.isActive ? 'white' : '#d49b13'"
+                                        class="w-5 h-5">
+                                        <path [attr.d]="subMenu.iconPath"></path>
+                                    </svg>
+                                    <span class="text-sm" [class.text-white]="subMenu?.isActive"
+                                        [class.text-[#d49b13]]="!subMenu?.isActive">{{ subMenu?.name }}</span>
+                                </a>
+                            </li>
+                            }
+                        </ul>
+                    </li>
+                    }
+                    }
+                </ul>
+            </div>
+            <div class="col-start-5 flex justify-end items-center gap-3">
+                <!-- User Info -->
+                <!-- <div class="flex gap-2 items-center rounded-full px-3 py-1.5 bg-[#d49b13]">
+                    <span class="capitalize text-white text-sm font-medium">Admin</span>
+                    <div class="w-8 h-8 rounded-full border-2 border-white bg-white/20 flex items-center justify-center overflow-hidden">
+                        <img src="images/no-image.png" alt="User" class="w-full h-full object-cover" />
+                    </div>
+                </div> -->
+
+                <!-- Logout Button -->
+                <button (click)="logout()"
+                    class="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 !rounded-full text-sm font-medium transition-all duration-300 shadow-sm hover:shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                        stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M18 12H9m9 0l-3-3m3 3l-3 3" />
+                    </svg>
+                    Logout
+                </button>
+            </div>
+        </header>
+    </div>
+    <main class="flex-1 px-4 lg:px-10 py-4 lg:py-6 transition-colors duration-300">
+        <router-outlet />
+    </main>
+    <app-footer />
+</div>
