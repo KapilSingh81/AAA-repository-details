@@ -1,3 +1,3 @@
 export const enviornment = {
-    baseUrl : 'https://dms.aaatechnologies.co.in/'
+    baseUrl : 'https://dms.aaatechnologies.co.in/api/'
 }

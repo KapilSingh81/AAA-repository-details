@@ -64,6 +64,11 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "allowedHosts": [
+              "dms.aaatechnologies.co.in"
+            ]
+          },
           "configurations": {
             "production": {
               "buildTarget": "AAA-repository:build:production"

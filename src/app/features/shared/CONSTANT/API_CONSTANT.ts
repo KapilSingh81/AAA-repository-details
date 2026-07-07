@@ -1,8 +1,8 @@
 export const API_CONSTANT = {
     //auth api 
-    login: 'api/v1/token',
-    refreshToken: 'api/v1/token/refresh',
-    logout: 'api/v1/token/logout',
+    login: 'v1/token',
+    refreshToken: 'v1/token/refresh',
+    logout: 'v1/token/logout',
 
     // dashboard api start here 
     dashboardList : 'projects',
