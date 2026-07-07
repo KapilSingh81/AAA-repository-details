@@ -5,6 +5,7 @@ import { BsModalService } from 'ngx-bootstrap/modal';
 import { CommonService } from '../../../../shared/services/common-services/common-service';
 import { DocumentService } from '../../services/document-service';
 import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-add-docment',
@@ -147,31 +148,26 @@ export class AddDocment {
     if (this.selectedCertificate()) {
       formData.append('certificate', this.selectedCertificate()!);
     }
-    this.documentService.addUploadDoumnet(formData).subscribe({
+    this.documentService.addUploadDoumnet(formData)
+    .pipe(
+      finalize(() => {
+        this.isLoading.set(false);
+      })
+    )
+    .subscribe({
       next: (res) => {
-        this.isLoading.set(false);        
-        if(res?.body?.code == 200) {
-          this.notificationService.success(res?.body?.message);
+        if (res?.body?.code === 200) {
+          this.notificationService.success(res?.body?.message || 'Upload successful');
           this.modalService.hide();
           this.mapdata.emit();
         } else {
-          this.notificationService.error(res?.error?.message);
-        }     
+          this.notificationService.error(res?.body?.message || 'Upload failed');
+        }
       },
       error: (err) => {
-         console.log(err);
-        this.isLoading.set(false);
-        this.notificationService.error('Upload failed');
+        console.error('Upload error:', err);
+        this.notificationService.error('Upload failed. Please try again.');
       }
     });
-
-    // Simulate API call
-    setTimeout(() => {
-      this.isLoading.set(false);
-      console.log('Form Data:', formData);
-      console.log('Document:', this.selectedDocument()?.name);
-      console.log('Certificate:', this.selectedCertificate()?.name);
-      this.modalService.hide();
-    }, 2000);
   }
 }
