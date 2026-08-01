@@ -37,4 +37,8 @@ export class MainDashobardService {
       .get(API_CONSTANT.dashboard)
       .pipe(catchError((error: HttpErrorResponse) => of(error)));
   };
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> a03a680 (new-dashboard)
