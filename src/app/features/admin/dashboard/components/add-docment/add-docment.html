@@ -43,23 +43,23 @@
                 }
             </div>
 
-            <!-- Document Type -->
-
-
             <!-- Document Upload -->
             <div class="col-md-6 mb-2">
                 <label class="form-label">Document <span class="text-danger">*</span></label>
                 <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-indigo-400 transition-colors cursor-pointer"
                     [ngClass]="{
-                        'border-indigo-500 bg-indigo-50': isDragging()
-                    }" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)"
-                    (drop)="onDrop($event, 'document')" (click)="documentInput.click()">
+            'border-indigo-500 bg-indigo-50': isDragging()
+        }" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event, 'document')"
+                    (click)="documentInput.click()">
                     <input #documentInput type="file" (change)="onFileSelected($event, 'document')" class="hidden"
                         accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg" />
 
+                    @if (documentFileLoading()) {
+                    <span class="spinner-border spinner-border-sm text-indigo-600 mb-2" role="status"
+                        aria-hidden="true"></span>
+                    <p class="text-sm text-slate-600">Loading file...</p>
+                    } @else if (!selectedDocument()) {
                     <i class="fas fa-file-upload fa-2x text-slate-400 mb-2"></i>
-
-                    @if (!selectedDocument()) {
                     <p class="text-sm text-slate-600">
                         <span class="text-indigo-600 font-medium">Browse</span> or drop your document here
                     </p>
@@ -67,6 +67,7 @@
                         Supported: PDF, Word, Excel, PowerPoint, Images
                     </p>
                     } @else {
+                    <i class="fas fa-file-upload fa-2x text-slate-400 mb-2"></i>
                     <div class="flex items-center justify-center gap-3">
                         <span class="text-sm font-medium text-slate-700">{{ selectedDocument()?.name }}</span>
                         <span class="text-xs text-slate-500">({{ formatFileSize(selectedDocument()?.size || 0)
@@ -86,19 +87,23 @@
             </div>
 
             <!-- Certificate Upload -->
+            <!-- Certificate Upload -->
             <div class="col-md-6 mb-2">
                 <label class="form-label">Certificate <span class="text-danger">*</span></label>
                 <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-indigo-400 transition-colors cursor-pointer"
                     [ngClass]="{
-                        'border-indigo-500 bg-indigo-50': isDragging()
-                    }" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)"
-                    (drop)="onDrop($event, 'certificate')" (click)="certificateInput.click()">
+            'border-indigo-500 bg-indigo-50': isDragging()
+        }" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event, 'certificate')"
+                    (click)="certificateInput.click()">
                     <input #certificateInput type="file" (change)="onFileSelected($event, 'certificate')" class="hidden"
                         accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg" />
 
+                    @if (certificateFileLoading()) {
+                    <span class="spinner-border spinner-border-sm text-indigo-600 mb-2" role="status"
+                        aria-hidden="true"></span>
+                    <p class="text-sm text-slate-600">Loading file...</p>
+                    } @else if (!selectedCertificate()) {
                     <i class="fas fa-certificate fa-2x text-slate-400 mb-2"></i>
-
-                    @if (!selectedCertificate()) {
                     <p class="text-sm text-slate-600">
                         <span class="text-indigo-600 font-medium">Browse</span> or drop your certificate here
                     </p>
@@ -106,6 +111,7 @@
                         Supported: PDF, Word, Excel, PowerPoint, Images
                     </p>
                     } @else {
+                    <i class="fas fa-certificate fa-2x text-slate-400 mb-2"></i>
                     <div class="flex items-center justify-center gap-3">
                         <span class="text-sm font-medium text-slate-700">{{ selectedCertificate()?.name }}</span>
                         <span class="text-xs text-slate-500">({{ formatFileSize(selectedCertificate()?.size || 0)

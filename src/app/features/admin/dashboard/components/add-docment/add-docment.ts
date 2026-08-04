@@ -21,14 +21,15 @@ export class AddDocment {
   private commonService = inject(CommonService);
   private documentService = inject(DocumentService);
   private notificationService = inject(NotificationService);
-    private cdr = inject(ChangeDetectorRef); 
-  
+  private cdr = inject(ChangeDetectorRef);
+
   isLoading = signal(false);
   isDragging = signal(false);
   selectedDocument = signal<File | null>(null);
   selectedCertificate = signal<File | null>(null);
   editData: any;
-  documentTypeList : any;
+  documentTypeList: any;
+  uploadProgress = signal(0);
 
   documentForm: FormGroup = this.fb.group({
     project_name: ['', [Validators.required, Validators.minLength(3)]],
@@ -43,9 +44,9 @@ export class AddDocment {
   }
 
   getDocumentList() {
-    this.commonService.documentTypeList().subscribe((res:any) => {
-      this.documentTypeList = res?.body?.types || []  
-      this.cdr.detectChanges();  
+    this.commonService.documentTypeList().subscribe((res: any) => {
+      this.documentTypeList = res?.body?.types || []
+      this.cdr.detectChanges();
       console.log(this.documentTypeList);
     })
   }
@@ -79,25 +80,45 @@ export class AddDocment {
     }
   }
 
+  documentFileLoading = signal(false);
+  certificateFileLoading = signal(false);
+
   onFileSelected(event: Event, fileType: 'document' | 'certificate') {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.handleFileSelection(input.files[0], fileType);
     }
+    input.value = '';
   }
 
+
   handleFileSelection(file: File, fileType: 'document' | 'certificate') {
-    if (fileType === 'document') {
-      this.selectedDocument.set(file);
-      this.documentForm.patchValue({ document: file.name });
-      this.documentForm.get('document')?.markAsTouched();
-    } else {
-      this.selectedCertificate.set(file);
-      this.documentForm.patchValue({ certificate: file.name });
-      this.documentForm.get('certificate')?.markAsTouched();
-    }
-    // Clear validation error
-    this.documentForm.get(fileType)?.setErrors(null);
+    const loadingSignal = fileType === 'document' ? this.documentFileLoading : this.certificateFileLoading;
+    loadingSignal.set(true);
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (fileType === 'document') {
+        this.selectedDocument.set(file);
+        this.documentForm.patchValue({ document: file.name });
+        this.documentForm.get('document')?.markAsTouched();
+      } else {
+        this.selectedCertificate.set(file);
+        this.documentForm.patchValue({ certificate: file.name });
+        this.documentForm.get('certificate')?.markAsTouched();
+      }
+      this.documentForm.get(fileType)?.setErrors(null);
+      loadingSignal.set(false);
+      this.cdr.detectChanges();
+    };
+
+    reader.onerror = () => {
+      loadingSignal.set(false);
+      this.notificationService.error('Failed to read file. Please try again.');
+    };
+
+    reader.readAsArrayBuffer(file); // sirf read trigger karne ke liye, memory me store nahi kar rahe
   }
 
   removeFile(event: Event, fileType: 'document' | 'certificate') {
@@ -119,7 +140,7 @@ export class AddDocment {
     return (size / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
-  onSubmit(e:any) {
+  onSubmit(e: any) {
     e.preventDefault();
     Object.keys(this.documentForm.controls).forEach(key => {
       this.documentForm.get(key)?.markAsTouched();
@@ -142,32 +163,32 @@ export class AddDocment {
     formData.append('project_name', this.documentForm.get('project_name')?.value);
     formData.append('client_name', this.documentForm.get('client_name')?.value);
     formData.append('type', this.documentForm.get('type')?.value);
-        if (this.selectedDocument()) {
+    if (this.selectedDocument()) {
       formData.append('document', this.selectedDocument()!);
     }
     if (this.selectedCertificate()) {
       formData.append('certificate', this.selectedCertificate()!);
     }
     this.documentService.addUploadDoumnet(formData)
-    .pipe(
-      finalize(() => {
-        this.isLoading.set(false);
-      })
-    )
-    .subscribe({
-      next: (res) => {
-        if (res?.body?.code === 200) {
-          this.notificationService.success(res?.body?.message || 'Upload successful');
-          this.modalService.hide();
-          this.mapdata.emit();
-        } else {
-          this.notificationService.error(res?.body?.message || 'Upload failed');
+      .pipe(
+        finalize(() => {
+          this.isLoading.set(false);
+        })
+      )
+      .subscribe({
+        next: (res) => {
+          if (res?.body?.code === 200) {
+            this.notificationService.success(res?.body?.message || 'Upload successful');
+            this.modalService.hide();
+            this.mapdata.emit();
+          } else {
+            this.notificationService.error(res?.body?.message || 'Upload failed');
+          }
+        },
+        error: (err) => {
+          console.error('Upload error:', err);
+          this.notificationService.error('Upload failed. Please try again.');
         }
-      },
-      error: (err) => {
-        console.error('Upload error:', err);
-        this.notificationService.error('Upload failed. Please try again.');
-      }
-    });
+      });
   }
 }

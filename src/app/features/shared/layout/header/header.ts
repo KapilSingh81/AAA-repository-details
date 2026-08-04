@@ -4,6 +4,8 @@ import { NavigationEnd, Router, RouterLink, RouterOutlet } from "@angular/router
 import { Footer } from "../footer/footer";
 import { ADMIN_MENU } from '../../CONSTANT/menu';
 import { AuthService } from '../../services/auth-service/auth-service';
+import { BsModalRef, BsModalService, ModalOptions } from 'ngx-bootstrap/modal';
+import { ResetPassword } from '../../components/reset-password/reset-password';
 
 @Component({
   selector: 'app-header',
@@ -20,8 +22,11 @@ export class Header {
   private router = inject(Router);
   private loginService = inject(AuthService);
   private renderer = inject(Renderer2);
+  bsModalRef! :BsModalRef;
 
-  constructor() {
+  constructor(
+    private modalService : BsModalService
+  ) {
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
         const segments = this.router.url.split('/');
@@ -74,5 +79,18 @@ export class Header {
 
   logout() {
     this.loginService.logoutUser()
+  };
+
+  onResetPwd() {
+    const initialState: ModalOptions = {
+      initialState: {},
+    };
+    this.bsModalRef = this.modalService.show(
+      ResetPassword,
+      Object.assign(initialState, {
+        id: 'confirmation',
+        class: 'modal-md modal-dialog-centered alert-popup',
+      })
+    );
   }
 }
