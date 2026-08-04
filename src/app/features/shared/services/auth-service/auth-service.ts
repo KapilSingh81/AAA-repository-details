@@ -184,5 +184,11 @@ export class AuthService {
     if (this.isLoggingOut) return false;
     if (this.redirectingToLogin) return false;
     return true;
-  }
+  };
+
+  resetPwd(payload: any): Observable<any> {
+    let url = API_CONSTANT.resetPwd;
+    return this.apiService
+      .post(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)));
+  };
 }

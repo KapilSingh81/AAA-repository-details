@@ -3,6 +3,7 @@ export const API_CONSTANT = {
     login: 'v1/token',
     refreshToken: 'v1/token/refresh',
     logout: 'v1/token/logout',
+    resetPwd : 'v1/reset-password',
 
     // document api start here 
     dashboardList : 'projects',
