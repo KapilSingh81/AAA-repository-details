@@ -5,10 +5,13 @@ export const API_CONSTANT = {
     logout: 'v1/token/logout',
     resetPwd : 'v1/reset-password',
 
-    // dashboard api start here 
+    // document api start here 
     dashboardList : 'projects',
     documentTypeList : 'documents/types',
     addUploadDoumnet : 'documents/upload',
     documentDetails :'project/details/{projectId}',
+
+    //dashboard Api start here
+    dashboard : 'dashboard/me' 
 
 }
