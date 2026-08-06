@@ -12,6 +12,6 @@ export const API_CONSTANT = {
     documentDetails :'project/details/{projectId}',
 
     //dashboard Api start here
-    dashboard : 'dashboard/me'
+    dashboard : 'dashboard/me' 
 
 }
