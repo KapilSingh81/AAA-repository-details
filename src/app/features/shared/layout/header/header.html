@@ -8,7 +8,7 @@
                 <ul class="flex items-center gap-2">
                     @for(data of menu() ; track data?.name) {
                     @if(!data?.subNav?.length) {
-                    <li class="group flex items-center px-4 py-2.5 rounded-md cursor-pointer" [ngClass]="{
+                    <li (click)="onMenuItemClick(data, $event)" class="group flex items-center px-4 py-2.5 rounded-md cursor-pointer" [ngClass]="{
                             'bg-indigo-600 !text-white': data?.isActive,
                             'hover:bg-indigo-600': !data?.isActive
                             }">
@@ -23,7 +23,7 @@
                                 '!text-white': data?.isActive,
                                 '!text-[#4f39f6] group-hover:!text-white': !data?.isActive
                                 }">
-                                <path [attr.d]="data.iconPath"></path>
+                                <path [attr.d]="data.iconPath" [attr.stroke]="data?.isActive ? '#fff' :data.color"></path>
                             </svg>
 
                             <span [ngClass]="{
@@ -80,7 +80,6 @@
                 </ul>
             </div>
             <div class="col-start-5 flex justify-end items-center gap-3">
-                <!-- User Menu Dropdown -->
                 <div class="relative group">
                     <button
                         class="flex items-center gap-2 bg-[#4f39f6] hover:bg-indigo-700 text-white px-4 py-2 !rounded-full text-sm font-medium transition-all duration-300 shadow-sm hover:shadow-md">
@@ -94,7 +93,6 @@
                         </svg>
                     </button>
 
-                    <!-- pt-2 instead of mt-2, and top-full instead of relying on margin -->
                     <div class="absolute right-0 top-full hidden group-hover:block pt-2 !w-52 z-50">
                         <ul class="bg-white shadow-lg rounded-lg border border-gray-100">
                             <li (click)="onResetPwd()"
@@ -102,7 +100,7 @@
                                 <a class="cursor-pointer flex items-center gap-2 text-[#4f39f6]">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                        <path stroke-linecap="round" stroke-linejoin="round"  stroke="#4f39f6"
                                             d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
                                     </svg>
                                     <span class="text-sm">Reset Password</span>
@@ -113,7 +111,7 @@
                                 <a class="cursor-pointer flex items-center gap-2 text-red-500">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                         stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                        <path stroke-linecap="round" stroke-linejoin="round"  stroke="#EF4444"
                                             d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M18 12H9m9 0l-3-3m3 3l-3 3" />
                                     </svg>
                                     <span class="text-sm">Logout</span>
