@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild, signal, computed, inject, AfterViewInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, signal, computed, effect, inject, AfterViewInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Chart, registerables, ChartConfiguration } from 'chart.js';
 import { CommonModule } from '@angular/common';
 import { MainDashobardService } from '../../services/main-dashobard-service';
@@ -118,6 +118,7 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
   private sparkCharts: Chart[] = [];
   private dashboardService = inject(MainDashobardService);
   private viewInitialized = false;
+  private activeRequestId = 0;
 
   ngOnInit(): void {
     this.loadDashboardData();
@@ -139,8 +140,16 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
   private loadDashboardData(): void {
     this.loading.set(true);
     this.error.set(false);
+
+    const requestId = ++this.activeRequestId;
+
     this.dashboardService.getDashboard().subscribe({
       next: (res: any) => {
+        if (requestId !== this.activeRequestId) {
+          console.warn('Ignoring stale dashboard response', requestId, this.activeRequestId);
+          return;
+        }
+
         this.data.set(res?.body);
         this.recentUploads.set((res.body?.recent_uploads || []).slice(0, 5));
 
@@ -155,6 +164,7 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
         }
       },
       error: (err: any) => {
+        if (requestId !== this.activeRequestId) return;
         console.error('Error loading dashboard data:', err);
         this.error.set(true);
         this.loading.set(false);
@@ -253,7 +263,6 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
 
     const makeSpark = (ref: ElementRef<HTMLCanvasElement> | undefined, value: number, color: string, type: 'line' | 'bar' = 'line') => {
       if (!ref?.nativeElement) return;
-      // synthetic smooth series ending at the real value (placeholder trend since per-day history isn't available yet)
       const points = value > 0 ? [value * 0.3, value * 0.5, value * 0.4, value * 0.7, value * 0.6, value * 0.9, value] : [0, 0, 0, 0, 0, 0, 0];
       const chart = new Chart(ref.nativeElement, {
         type,
