@@ -2,6 +2,8 @@ import { Component, OnInit, ElementRef, ViewChild, signal, computed, effect, inj
 import { Chart, registerables, ChartConfiguration } from 'chart.js';
 import { CommonModule } from '@angular/common';
 import { MainDashobardService } from '../../services/main-dashobard-service';
+import { CommonService } from '../../../../../shared/services/common-services/common-service';
+import { Router } from '@angular/router';
 
 Chart.register(...registerables);
 
@@ -52,7 +54,13 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
     web_api: 'Web API'
   };
 
-  // ---- Computed derived data for the "image-style" widgets ----
+  fromDate = signal<string>('');
+  toDate = signal<string>('');
+  showDatePicker = signal<boolean>(false);
+  displayRange = computed(() => {
+    if (!this.fromDate() || !this.toDate()) return 'Select date range';
+    return `${this.commonService.dateFormat(this.fromDate())} - ${this.commonService.dateFormat(this.toDate())}`;
+  });
 
   totalAudits = computed(() => {
     const counts = this.data()?.audit_type_counts;
@@ -73,7 +81,6 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
   });
 
   overallScore = computed(() => {
-    // simple composite score out of 100 based on available ratios; safe default 0
     const c = this.completionRate();
     const cert = this.certificateRate();
     if (!this.hasAnyData()) return 0;
@@ -93,34 +100,19 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
     })).sort((a, b) => b.count - a.count);
   });
 
-  statusBreakdown = computed(() => {
-    const uploads = this.recentUploads();
-    if (!uploads.length) return [];
-    const groups: Record<string, number> = {};
-    uploads.forEach(u => {
-      const s = u.status || 'completed';
-      groups[s] = (groups[s] || 0) + 1;
-    });
-    const total = uploads.length || 1;
-    const colorMap: Record<string, string> = {
-      success: '#6366F1', completed: '#6366F1', pending: '#38BDF8', failed: '#F43F5E'
-    };
-    return Object.entries(groups).map(([status, count]) => ({
-      status,
-      count,
-      pct: Math.round((count / total) * 100),
-      color: colorMap[status] || '#94A3B8'
-    }));
-  });
-
   private trendChart?: Chart;
   private typeChart?: Chart;
   private sparkCharts: Chart[] = [];
-  private dashboardService = inject(MainDashobardService);
   private viewInitialized = false;
   private activeRequestId = 0;
 
+  private dashboardService = inject(MainDashobardService);
+  private commonService = inject(CommonService);
+  private router = inject(Router)
+
+
   ngOnInit(): void {
+    this.setDefaultDateRange();
     this.loadDashboardData();
   }
 
@@ -143,31 +135,28 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
 
     const requestId = ++this.activeRequestId;
 
-    this.dashboardService.getDashboard().subscribe({
+    const payload: any = {};
+    if (this.fromDate()) payload.from_date = this.commonService.dateFormat(this.fromDate());
+    if (this.toDate()) payload.to_date = this.commonService.dateFormat(this.toDate());
+
+    this.dashboardService.getDashboard(payload).subscribe({
       next: (res: any) => {
-        if (requestId !== this.activeRequestId) {
-          console.warn('Ignoring stale dashboard response', requestId, this.activeRequestId);
-          return;
-        }
-
+        this.loading.set(false);
+        if (requestId !== this.activeRequestId) return;
         this.data.set(res?.body);
-        this.recentUploads.set((res.body?.recent_uploads || []).slice(0, 5));
-
+        this.recentUploads.set(res.body?.latest_projects);
         const total = (res.body?.total_projects || 0) + (res.body?.total_reports || 0) + (res.body?.total_certificates || 0);
         this.hasAnyData.set(total > 0);
-
         this.buildStatCards(res?.body);
-        this.loading.set(false);
-
         if (this.viewInitialized) {
           setTimeout(() => this.renderCharts(), 0);
         }
       },
       error: (err: any) => {
+        this.loading.set(false);
         if (requestId !== this.activeRequestId) return;
         console.error('Error loading dashboard data:', err);
         this.error.set(true);
-        this.loading.set(false);
       }
     });
   }
@@ -186,7 +175,7 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
     if (!data) return;
 
     this.renderTypeChart(data.audit_type_counts);
-    this.renderTrendChart(data.recent_uploads || []);
+    this.renderTrendChart(data.upload_date || []);
     this.renderSparklines(data);
   }
 
@@ -218,17 +207,21 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private renderTrendChart(uploads: any[]): void {
+  private renderTrendChart(uploadDates: { date: string; count: number }[]): void {
     if (!this.trendChartRef?.nativeElement) return;
+    const parsed = uploadDates.map(item => {
+      const [d, m, y] = item.date.split('-').map(Number);
+      return {
+        dateObj: new Date(y, m - 1, d),
+        label: item.date,
+        count: item.count
+      };
+    }).sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
 
-    const grouped: Record<string, number> = {};
-    uploads.forEach(u => {
-      const day = new Date(u.uploaded_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-      grouped[day] = (grouped[day] || 0) + 1;
-    });
-
-    const labels = Object.keys(grouped);
-    const values = Object.values(grouped);
+    const labels = parsed.map(p =>
+      p.dateObj.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+    );
+    const values = parsed.map(p => p.count);
 
     this.trendChart?.destroy();
     this.trendChart = new Chart(this.trendChartRef.nativeElement, {
@@ -252,7 +245,7 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
         maintainAspectRatio: false,
         animation: { duration: 1200, easing: 'easeOutQuart' },
         plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        scales: { y: { beginAtZero: true, ticks: { stepSize: Math.ceil(Math.max(...values, 1) / 6) } } }
       }
     });
   }
@@ -308,5 +301,60 @@ export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
 
   refreshData(): void {
     this.loadDashboardData();
+  };
+
+  private setDefaultDateRange(): void {
+    const today = new Date();
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(today.getMonth() - 1);
+
+    this.fromDate.set(this.toApiFormat(oneMonthAgo));
+    this.toDate.set(this.toApiFormat(today));
+  }
+
+  private toApiFormat(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  toggleDatePicker(): void {
+    this.showDatePicker.update(v => !v);
+  }
+
+  closeDatePicker(): void {
+    this.showDatePicker.set(false);
+  }
+
+  onFromDateChange(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.fromDate.set(value);
+  }
+
+  onToDateChange(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.toDate.set(value);
+  }
+
+  applyDateFilter() {
+    if (this.fromDate() && this.toDate() && this.fromDate() > this.toDate()) {
+      return;
+    }
+    this.showDatePicker.set(false);
+    this.loadDashboardData();
+  };
+
+  insertLineBreaks(text: string | null, interval: number = 200): string {
+    if (!text) return '';
+    return text.toString().replace(new RegExp(`(.{${interval}})`, 'g'), '$1<br>');
+  };
+
+  onRedirectRepo(url:string) {
+    this.router.navigateByUrl(url)
+  };
+
+  onShowProjectDetails(doc: any) {
+    this.router.navigate(['/user/project-details', doc.id]);
   }
 }

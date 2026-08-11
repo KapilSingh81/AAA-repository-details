@@ -129,7 +129,7 @@ export class Login {
   }
 
   redirectByRole() {
-    this.router.navigateByUrl('/user/workspace');
+    this.router.navigateByUrl('/user/dashboard/home');
   }
 
   private async checkExistingSession() {

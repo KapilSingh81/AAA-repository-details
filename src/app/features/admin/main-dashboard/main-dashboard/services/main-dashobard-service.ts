@@ -32,9 +32,12 @@ export interface FileRepoFile {
 export class MainDashobardService {
  private apiService = inject(HttpService)
 
-  getDashboard(): Observable<any> {
+  getDashboard(data:any): Observable<any> {
+    let params :any = {};
+    params.start_date = data?.from_date;
+    params.end_date = data?.to_date;
     return this.apiService
-      .get(API_CONSTANT.dashboard)
+      .get(API_CONSTANT.dashboard , {params})
       .pipe(catchError((error: HttpErrorResponse) => of(error)));
   };
 }

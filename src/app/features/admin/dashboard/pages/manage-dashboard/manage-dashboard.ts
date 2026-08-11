@@ -298,7 +298,7 @@ export class ManageDashboard {
   onPageSizeChange(event: Event) {
     const value = Number((event.target as HTMLSelectElement).value);
     this.pageSize.set(value);
-    this.currentPage.set(1); // page size change hone par page 1 pe reset karo
+    this.currentPage.set(1);
     this.getDocumentList();
   }
 
