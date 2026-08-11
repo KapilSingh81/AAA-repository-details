@@ -9,6 +9,7 @@ import { Subject } from 'rxjs';
 import { Router } from '@angular/router';
 import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
 import { CookieService } from 'ngx-cookie-service';
+import { FormsModule } from '@angular/forms';
 
 interface Document {
   id: string;
@@ -22,7 +23,7 @@ interface Document {
 
 @Component({
   selector: 'app-manage-dashboard',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './manage-dashboard.html',
   styleUrl: './manage-dashboard.scss',
 })
@@ -41,14 +42,11 @@ export class ManageDashboard {
   bsModalRef!: BsModalRef;
   isLoading = signal(false);
   isDownloading = signal<string | null>(null);
-
-  // Filter properties
   searchName = signal('');
   selectedType = signal('');
   documentTypeList: any;
   private searchSubject = new Subject<string>();
 
-  // Icon mapping for audit types
   private auditIconMap: { [key: string]: string } = {
     'web': '🌐',
     'vapt': '🛡️',
@@ -104,14 +102,11 @@ export class ManageDashboard {
   };
 
   private allDocuments = signal<Document[]>([]);
+  totalCount = signal(0);
 
-  documents = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize();
-    const end = start + this.pageSize();
-    return this.allDocuments().slice(start, end);
-  });
+  documents = computed(() => this.allDocuments());
 
-  totalItems = computed(() => this.allDocuments().length);
+  totalItems = computed(() => this.totalCount());
   totalPages = computed(() => Math.ceil(this.totalItems() / this.pageSize()));
   Math = Math;
 
@@ -184,19 +179,24 @@ export class ManageDashboard {
     let payload: any = {
       uuid: null,
       name: this.searchName() || null,
-      audit_type: this.selectedType() || null
+      audit_type: this.selectedType() || null,
+      page: this.currentPage(),
+      limit: this.pageSize()
     };
 
     this.documentService.dashboardList(payload).subscribe({
       next: (res: any) => {
         this.isLoading.set(false);
         this.allDocuments.set(res?.body?.projects || []);
-        this.currentPage.set(1);
+        this.currentPage.set(res?.body?.pagination?.page || 1);
+        this.pageSize.set(res?.body?.pagination?.limit || this.pageSize());
+        this.totalCount.set(res?.body?.pagination?.total_count || 0);
       },
       error: (err) => {
         this.isLoading.set(false);
         console.error('Error fetching documents:', err);
         this.allDocuments.set([]);
+        this.totalCount.set(0);
       }
     });
   }
@@ -217,6 +217,8 @@ export class ManageDashboard {
     this.searchName.set('');
     this.selectedType.set('');
     this.searchSubject.next('');
+    this.currentPage.set(1);
+    this.pageSize.set(10);
     this.getDocumentList();
   }
 
@@ -287,9 +289,17 @@ export class ManageDashboard {
   }
 
   changePage(page: number) {
-    if (page >= 1 && page <= this.totalPages()) {
+    if (page >= 1 && page <= this.totalPages() && page !== this.currentPage()) {
       this.currentPage.set(page);
+      this.getDocumentList();
     }
+  };
+
+  onPageSizeChange(event: Event) {
+    const value = Number((event.target as HTMLSelectElement).value);
+    this.pageSize.set(value);
+    this.currentPage.set(1); // page size change hone par page 1 pe reset karo
+    this.getDocumentList();
   }
 
   getPageNumbers(): number[] {

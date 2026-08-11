@@ -12,7 +12,10 @@ export class DocumentService {
   private apiService = inject(HttpService)
 
   dashboardList(data: any): Observable<any> {
-    let params: any = {};
+    let params: any = {
+      page : data?.page,
+      limit : data?.limit
+    };
     if (data?.uuid) {
       params.uuid = data.uuid;
     };

@@ -38,6 +38,7 @@
         </div>
 
         <!-- Filter Section -->
+        <!-- Filter Section -->
         <div class="flex items-center gap-4 p-4 border-b bg-slate-50">
             <div class="flex-1">
                 <input type="text"
@@ -57,6 +58,19 @@
                     }
                 </select>
             </div>
+
+            <!-- Page Size Selector -->
+            <div class="w-32">
+                <select
+                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white"
+                    [ngModel]="pageSize()" (change)="onPageSizeChange($event)">
+                    <option [value]="10">10</option>
+                    <option [value]="25">25 </option>
+                    <option [value]="50">50 </option>
+                    <option [value]="100">100 </option>
+                </select>
+            </div>
+
             <button class="btn btn-danger" (click)="clearFilters()">
                 <i class="fa fa-close" style="cursor: pointer;"></i> Clear Filters
             </button>
@@ -82,6 +96,9 @@
             <table class="w-full">
                 <thead>
                     <tr class="!border-b bg-slate-50 text-left">
+                          <th class="p-3 text-sm font-semibold text-slate-600 w-16">
+                            S.No
+                        </th>
                         <th class="p-3 text-sm font-semibold text-slate-600">
                             Name
                         </th>
@@ -97,8 +114,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @for (doc of documents(); track doc.id) {
+                    @for (doc of documents(); track doc.id; let i = $index) {
                     <tr class="!border-b hover:bg-slate-50">
+                        <td class="p-3 text-slate-600 text-sm">
+                            {{ (currentPage() - 1) * pageSize() + i + 1 }}
+                        </td>
                         <td class="p-3">
                             <div class="flex items-center gap-3 cursor-pointer" (click)="onShowProjectDetails(doc)">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-full text-2xl"
@@ -124,7 +144,6 @@
                         <td class="p-3 text-slate-600 text-sm">
                             {{ doc.created_at | date:'dd MMM yyyy, hh:mm a' }}
                         </td>
-                        <!-- Table View Actions -->
                         <td class="p-3">
                             <div class="flex items-center gap-2">
                                 @if (doc.report_download_url) {
@@ -305,13 +324,19 @@
                     (click)="changePage(currentPage() - 1)">
                     ←
                 </button>
-                @for (page of getPageNumbers(); track page) {
+                @for (page of getPageNumbers(); track $index) {
+                @if (page === -1) {
+                <span class="h-9 w-9 flex items-center justify-center text-slate-400">
+                    …
+                </span>
+                } @else {
                 <button class="h-9 w-9 rounded-lg" [ngClass]="{
-                            'bg-indigo-600 text-white': currentPage() === page,
-                            'border hover:bg-slate-100': currentPage() !== page
-                        }" (click)="changePage(page)">
+                'bg-indigo-600 text-white': currentPage() === page,
+                'border hover:bg-slate-100': currentPage() !== page
+            }" (click)="changePage(page)">
                     {{ page }}
                 </button>
+                }
                 }
                 <button class="h-9 w-9 rounded-lg border hover:bg-slate-100" [disabled]="currentPage() === totalPages()"
                     (click)="changePage(currentPage() + 1)">
