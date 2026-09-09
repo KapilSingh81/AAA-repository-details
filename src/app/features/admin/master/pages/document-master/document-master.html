@@ -1,0 +1,979 @@
+<div class="min-h-screen bg-slate-50 p-3 md:p-5">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+    <div>
+      <h1 class="!text-xl font-bold text-slate-800 !mb-0.5">Document Master</h1>
+      <p class="!text-sm text-slate-500 !mb-0">Create and generate security audit documents</p>
+    </div>
+  </div>
+
+  @if (successMessage()) {
+    <div
+      class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+    >
+      <div class="flex items-center gap-2">
+        <span
+          class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"
+          >✓</span
+        >
+        <span>{{ successMessage() }}</span>
+      </div>
+
+      @if (reportUrl() || certificateUrl()) {
+        <div class="mt-2 flex flex-wrap gap-2 pl-8">
+          @if (reportUrl()) {
+            <a
+              [href]="reportUrl()"
+              target="_blank"
+              rel="noopener"
+              class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+            >
+              Download Report
+            </a>
+          }
+          @if (certificateUrl()) {
+            <a
+              [href]="certificateUrl()"
+              target="_blank"
+              rel="noopener"
+              class="rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+            >
+              Download Certificate
+            </a>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+      <div class="flex items-center gap-2">
+        <span
+          class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600"
+          >!</span
+        >
+        <span>{{ errorMessage() }}</span>
+      </div>
+    </div>
+  }
+
+  <form [formGroup]="documentForm" (ngSubmit)="generateDocument()" class="space-y-3">
+    <!-- PROJECT INFORMATION -->
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <h2 class="!text-base font-semibold text-slate-800 !mb-0.5">Project Information</h2>
+          <p class="!text-xs text-slate-400 !mb-0">Basic information about the audit project</p>
+        </div>
+        <div
+          class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600"
+        >
+          📄
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600"
+            >Project Name <span class="text-rose-500">*</span></label
+          >
+          <input
+            type="text"
+            formControlName="project_name"
+            placeholder="Enter project name"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600"
+            >Client Name <span class="text-rose-500">*</span></label
+          >
+          <input
+            type="text"
+            formControlName="client_name"
+            placeholder="Enter client name"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600"
+            >Audit Type <span class="text-rose-500">*</span></label
+          >
+          <input
+            type="text"
+            formControlName="audit_type"
+            placeholder="Enter audit type"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- METADATA -->
+    <section
+      formGroupName="metadata"
+      class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+    >
+      <div class="mb-3">
+        <h2 class="!text-base font-semibold text-slate-800 !mb-0.5">Audit Metadata</h2>
+        <p class="!text-xs text-slate-400 !mb-0">Document and audit related information</p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Document ID</label>
+          <input
+            type="text"
+            formControlName="document_id"
+            placeholder="Document ID"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Document Version</label>
+          <input
+            type="text"
+            formControlName="document_version"
+            placeholder="Document version"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Prepared By</label>
+          <input
+            type="text"
+            formControlName="prepared_by"
+            placeholder="Prepared by"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Reviewed By</label>
+          <input
+            type="text"
+            formControlName="reviewed_by"
+            placeholder="Reviewed by"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Approved By</label>
+          <input
+            type="text"
+            formControlName="approved_by"
+            placeholder="Approved by"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Released By</label>
+          <input
+            type="text"
+            formControlName="released_by"
+            placeholder="Released by"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Release Date</label>
+          <input
+            type="date"
+            formControlName="release_date"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Report Release Date</label>
+          <input
+            type="date"
+            formControlName="report_release_date"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">URL</label>
+          <input
+            type="url"
+            formControlName="url"
+            placeholder="https://example.com"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Public IP</label>
+          <input
+            type="text"
+            formControlName="public_ip"
+            placeholder="Public IP"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Internal IP</label>
+          <input
+            type="text"
+            formControlName="internal_ip"
+            placeholder="Internal IP"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Location</label>
+          <input
+            type="text"
+            formControlName="location"
+            placeholder="Location"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600"> Asset Criticality </label>
+
+          <input
+            type="text"
+            formControlName="asset_criticality"
+            placeholder="Enter Asset Criticality"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Asset Hash</label>
+          <input
+            type="text"
+            formControlName="asset_hash"
+            placeholder="Hash value"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">Execution Period</label>
+          <input
+            type="text"
+            formControlName="execution_period"
+            placeholder="01 Sep 2026 - 05 Sep 2026"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          />
+        </div>
+        <div class="md:col-span-2 xl:col-span-3">
+          <label class="mb-1 block text-xs font-medium text-slate-600">Methodology</label>
+          <textarea
+            rows="3"
+            formControlName="methodology"
+            placeholder="Enter audit methodology"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition resize-y placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+          ></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINDINGS -->
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="flex flex-col gap-2 mb-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 class="!text-base font-semibold text-slate-800 !mb-0.5">Findings</h2>
+          <p class="!text-xs text-slate-400 !mb-0">Security observations and vulnerabilities</p>
+        </div>
+        <button
+          type="button"
+          (click)="addFinding()"
+          class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          + Add Finding
+        </button>
+      </div>
+
+      <div formArrayName="findings" class="space-y-3">
+        @for (finding of findings.controls; track $index; let i = $index) {
+          <div [formGroupName]="i" class="rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+            <div class="mb-3 flex items-center justify-between border-b border-slate-200 pb-2">
+              <div class="flex items-center gap-2">
+                <span
+                  class="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-100 text-xs font-bold text-indigo-600"
+                  >{{ i + 1 }}</span
+                >
+                <div>
+                  <h3 class="!text-sm font-semibold text-slate-800 !mb-0">Finding #{{ i + 1 }}</h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                (click)="removeFinding(i)"
+                class="rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-100"
+              >
+                Remove
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Finding ID</label>
+                <input
+                  type="number"
+                  formControlName="finding_id"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Affected Asset</label>
+                <input
+                  type="text"
+                  formControlName="affected_asset"
+                  placeholder="Affected asset"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600"
+                  >Observation Title</label
+                >
+                <input
+                  type="text"
+                  formControlName="observation_title"
+                  placeholder="Observation title"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">CVE / CWE</label>
+                <input
+                  type="text"
+                  formControlName="cve_cwe"
+                  placeholder="CVE / CWE"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Severity</label>
+                <select
+                  formControlName="severity"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="">Select Severity</option>
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                  <option value="Informational">Informational</option>
+                </select>
+              </div>
+              <div>
+                <!-- Observation Type: API-driven (observationTypeOptions signal), falls back to New/Repeat -->
+                <label class="mb-1 block text-xs font-medium text-slate-600"
+                  >Observation Type</label
+                >
+                <select
+                  formControlName="observation_type"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="">Select Observation Type</option>
+                  @for (opt of observationTypeOptions(); track opt) {
+                    <option [value]="opt">{{ opt }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <!-- Status: API-driven dropdown (statusOptions signal), falls back to static defaults -->
+                <label class="mb-1 block text-xs font-medium text-slate-600">Status</label>
+                <select
+                  formControlName="status"
+                  (change)="updateSummary()"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="">Select Status</option>
+                  @for (opt of statusOptions(); track opt) {
+                    <option [value]="opt">{{ opt }}</option>
+                  }
+                </select>
+              </div>
+              <div class="md:col-span-2 xl:col-span-3">
+                <label class="mb-1 block text-xs font-medium text-slate-600"
+                  >Detailed Observation</label
+                >
+                <textarea
+                  rows="3"
+                  formControlName="detailed_observation"
+                  placeholder="Describe the observation..."
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition resize-y placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                ></textarea>
+              </div>
+              <div class="md:col-span-2 xl:col-span-3">
+                <label class="mb-1 block text-xs font-medium text-slate-600">Recommendation</label>
+                <textarea
+                  rows="3"
+                  formControlName="recommendation"
+                  placeholder="Enter recommendation..."
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition resize-y placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                ></textarea>
+              </div>
+              <div class="md:col-span-2 xl:col-span-3">
+                <label class="mb-1 block text-xs font-medium text-slate-600">Reference</label>
+                <input
+                  type="text"
+                  formControlName="reference"
+                  placeholder="Reference"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+            </div>
+
+            <!-- Evidence -->
+            <div
+              formGroupName="evidence"
+              class="mt-3 rounded-lg border border-slate-200 bg-white p-3"
+            >
+              <div class="mb-3 flex items-center gap-2">
+                <div
+                  class="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100 text-violet-600"
+                >
+                  🔎
+                </div>
+                <h4 class="!text-sm font-semibold text-slate-800 !mb-0">Evidence</h4>
+              </div>
+
+              <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <div>
+                  <div class="mb-2 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-700">Interim Evidence</span>
+                    <button
+                      type="button"
+                      (click)="addInterim(finding)"
+                      class="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                    >
+                      + Add Evidence
+                    </button>
+                  </div>
+                  <div formArrayName="interim" class="space-y-2">
+                    @for (evidence of getInterim(finding).controls; track $index; let j = $index) {
+                      <div class="flex gap-2">
+                        <input
+                          type="text"
+                          [formControlName]="j"
+                          placeholder="Enter interim evidence"
+                          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        />
+                        <button
+                          type="button"
+                          (click)="removeInterim(finding, j)"
+                          class="w-9 shrink-0 rounded-lg border border-rose-200 text-rose-500 outline-none hover:bg-rose-50 focus:ring-2 focus:ring-rose-100"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <div>
+                  <div class="mb-2 flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-700">Final Evidence</span>
+                    <button
+                      type="button"
+                      (click)="addFinal(finding)"
+                      class="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                    >
+                      + Add Evidence
+                    </button>
+                  </div>
+                  <div formArrayName="final" class="space-y-2">
+                    @for (evidence of getFinal(finding).controls; track $index; let j = $index) {
+                      <div class="flex gap-2">
+                        <input
+                          type="text"
+                          [formControlName]="j"
+                          placeholder="Enter final evidence"
+                          class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        />
+                        <button
+                          type="button"
+                          (click)="removeFinal(finding, j)"
+                          class="w-9 shrink-0 rounded-lg border border-rose-200 text-rose-500 outline-none hover:bg-rose-50 focus:ring-2 focus:ring-rose-100"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- AUDITORS -->
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <div>
+          <h2 class="!text-base font-semibold text-slate-800 !mb-0.5">Auditors</h2>
+          <p class="!text-xs text-slate-400 !mb-0">Audit team information</p>
+        </div>
+        <button
+          type="button"
+          (click)="addAuditor()"
+          class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          + Add Auditor
+        </button>
+      </div>
+
+      <div formArrayName="auditors" class="space-y-2">
+        @for (auditor of auditors.controls; track $index; let i = $index) {
+          <div [formGroupName]="i" class="rounded-lg border border-slate-200 p-3">
+            <div class="mb-3 flex items-center justify-between">
+              <h3 class="!text-sm font-semibold text-slate-700 !mb-0">Auditor #{{ i + 1 }}</h3>
+              <button
+                type="button"
+                (click)="removeAuditor(i)"
+                class="text-xs text-rose-600 hover:text-rose-700"
+              >
+                Remove
+              </button>
+            </div>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Name</label>
+                <input
+                  type="text"
+                  formControlName="name"
+                  placeholder="Auditor name"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Designation</label>
+                <input
+                  type="text"
+                  formControlName="designation"
+                  placeholder="Designation"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Email</label>
+                <input
+                  type="email"
+                  formControlName="email"
+                  placeholder="Email"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Certifications</label>
+                <input
+                  type="text"
+                  formControlName="certifications"
+                  placeholder="Certifications"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Cert In Listed</label>
+                <input
+                  type="text"
+                  formControlName="cert_in_listed"
+                  placeholder="Certificate listed"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- TOOLS -->
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <div>
+          <h2 class="!text-base font-semibold text-slate-800 !mb-0.5">Tools</h2>
+          <p class="!text-xs text-slate-400 !mb-0">Tools used during the audit</p>
+        </div>
+        <button
+          type="button"
+          (click)="addTool()"
+          class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          + Add Tool
+        </button>
+      </div>
+
+      <div formArrayName="tools" class="space-y-2">
+        @for (tool of tools.controls; track $index; let i = $index) {
+          <div [formGroupName]="i" class="rounded-lg border border-slate-200 p-3">
+            <div class="mb-3 flex items-center justify-between">
+              <h3 class="!text-sm font-semibold text-slate-700 !mb-0">Tool #{{ i + 1 }}</h3>
+              <button
+                type="button"
+                (click)="removeTool(i)"
+                class="text-xs text-rose-600 hover:text-rose-700"
+              >
+                Remove
+              </button>
+            </div>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Name</label>
+                <input
+                  type="text"
+                  formControlName="name"
+                  placeholder="Tool name"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Version</label>
+                <input
+                  type="text"
+                  formControlName="version"
+                  placeholder="Tool version"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">License Type</label>
+                <input
+                  type="text"
+                  formControlName="license_type"
+                  placeholder="License type"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- DISTRIBUTION -->
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <div>
+          <h2 class="!text-base font-semibold text-slate-800 !mb-0.5">Distribution</h2>
+          <p class="!text-xs text-slate-400 !mb-0">Document distribution list</p>
+        </div>
+        <button
+          type="button"
+          (click)="addDistribution()"
+          class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          + Add Person
+        </button>
+      </div>
+
+      <div formArrayName="distribution" class="space-y-2">
+        @for (person of distribution.controls; track $index; let i = $index) {
+          <div [formGroupName]="i" class="rounded-lg border border-slate-200 p-3">
+            <div class="mb-3 flex items-center justify-between">
+              <h3 class="!text-sm font-semibold text-slate-700 !mb-0">Distribution #{{ i + 1 }}</h3>
+              <button
+                type="button"
+                (click)="removeDistribution(i)"
+                class="text-xs text-rose-600 hover:text-rose-700"
+              >
+                Remove
+              </button>
+            </div>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Name</label>
+                <input
+                  type="text"
+                  formControlName="name"
+                  placeholder="Name"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Organization</label>
+                <input
+                  type="text"
+                  formControlName="organization"
+                  placeholder="Organization"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Designation</label>
+                <input
+                  type="text"
+                  formControlName="designation"
+                  placeholder="Designation"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Email</label>
+                <input
+                  type="email"
+                  formControlName="email"
+                  placeholder="Email"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- ASSETS -->
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <div>
+          <h2 class="!text-base font-semibold text-slate-800 !mb-0.5">Assets</h2>
+          <p class="!text-xs text-slate-400 !mb-0">Audited assets information</p>
+        </div>
+        <button
+          type="button"
+          (click)="addAsset()"
+          class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          + Add Asset
+        </button>
+      </div>
+
+      <div formArrayName="assets" class="space-y-2">
+        @for (asset of assets.controls; track $index; let i = $index) {
+          <div [formGroupName]="i" class="rounded-lg border border-slate-200 p-3">
+            <div class="mb-3 flex items-center justify-between">
+              <h3 class="!text-sm font-semibold text-slate-700 !mb-0">Asset #{{ i + 1 }}</h3>
+              <button
+                type="button"
+                (click)="removeAsset(i)"
+                class="text-xs text-rose-600 hover:text-rose-700"
+              >
+                Remove
+              </button>
+            </div>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div class="md:col-span-2 xl:col-span-3">
+                <label class="mb-1 block text-xs font-medium text-slate-600"
+                  >Asset Description</label
+                >
+                <textarea
+                  rows="2"
+                  formControlName="asset_description"
+                  placeholder="Asset description"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition resize-y placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                ></textarea>
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600"> Criticality </label>
+
+                <input
+                  type="text"
+                  formControlName="criticality"
+                  placeholder="Enter Criticality"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Internal IP</label>
+                <input
+                  type="text"
+                  formControlName="internal_ip"
+                  placeholder="Internal IP"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">URL</label>
+                <input
+                  type="url"
+                  formControlName="url"
+                  placeholder="https://example.com"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Public IP</label>
+                <input
+                  type="text"
+                  formControlName="public_ip"
+                  placeholder="Public IP"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Location</label>
+                <input
+                  type="text"
+                  formControlName="location"
+                  placeholder="Location"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Hash Value</label>
+                <input
+                  type="text"
+                  formControlName="hash_value"
+                  placeholder="Hash value"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Version</label>
+                <input
+                  type="text"
+                  formControlName="version"
+                  placeholder="Version"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div class="md:col-span-2 xl:col-span-3">
+                <label class="mb-1 block text-xs font-medium text-slate-600">Other Details</label>
+                <textarea
+                  rows="2"
+                  formControlName="other_details"
+                  placeholder="Other details"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition resize-y placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- CONTROLS -->
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="mb-3 flex items-center justify-between">
+        <div>
+          <h2 class="!text-base font-semibold text-slate-800 !mb-0.5">Controls</h2>
+          <p class="!text-xs text-slate-400 !mb-0">Security controls and compliance</p>
+        </div>
+        <button
+          type="button"
+          (click)="addControl()"
+          class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          + Add Control
+        </button>
+      </div>
+
+      <div formArrayName="controls" class="space-y-2">
+        @for (control of controls.controls; track $index; let i = $index) {
+          <div [formGroupName]="i" class="rounded-lg border border-slate-200 p-3">
+            <div class="mb-3 flex items-center justify-between">
+              <h3 class="!text-sm font-semibold text-slate-700 !mb-0">Control #{{ i + 1 }}</h3>
+              <button
+                type="button"
+                (click)="removeControl(i)"
+                class="text-xs text-rose-600 hover:text-rose-700"
+              >
+                Remove
+              </button>
+            </div>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Control ID</label>
+                <input
+                  type="text"
+                  formControlName="control_id"
+                  placeholder="Control ID"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Control Name</label>
+                <input
+                  type="text"
+                  formControlName="control_name"
+                  placeholder="Control name"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <!-- Status: same API-driven statusOptions signal as findings -->
+                <label class="mb-1 block text-xs font-medium text-slate-600">Status</label>
+                <select
+                  formControlName="status"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="">Select Status</option>
+                  @for (opt of statusOptions(); track opt) {
+                    <option [value]="opt">{{ opt }}</option>
+                  }
+                </select>
+              </div>
+              <div class="md:col-span-2 xl:col-span-3">
+                <label class="mb-1 block text-xs font-medium text-slate-600">Description</label>
+                <textarea
+                  rows="2"
+                  formControlName="description"
+                  placeholder="Control description"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition resize-y placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                ></textarea>
+              </div>
+              <div class="md:col-span-2 xl:col-span-3">
+                <label class="mb-1 block text-xs font-medium text-slate-600">Remarks</label>
+                <textarea
+                  rows="2"
+                  formControlName="remarks"
+                  placeholder="Remarks"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition resize-y placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- AUDIT SUMMARY -->
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div class="mb-3">
+        <h2 class="!text-base font-semibold text-slate-800 !mb-0.5">Audit Summary</h2>
+        <p class="!text-xs text-slate-400 !mb-0">Automatically calculated from findings</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 md:grid-cols-5">
+        <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <p class="!text-xs text-slate-500 !mb-1">Total Observations</p>
+          <p class="!text-xl font-bold text-slate-800 !mb-0">{{ summary.total_observations }}</p>
+        </div>
+        <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+          <p class="!text-xs text-emerald-600 !mb-1">Complied</p>
+          <p class="!text-xl font-bold text-emerald-700 !mb-0">{{ summary.complied }}</p>
+        </div>
+        <div class="rounded-lg border border-rose-200 bg-rose-50 p-3">
+          <p class="!text-xs text-rose-600 !mb-1">Not Complied</p>
+          <p class="!text-xl font-bold text-rose-700 !mb-0">{{ summary.not_complied }}</p>
+        </div>
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <p class="!text-xs text-amber-600 !mb-1">Exceptions</p>
+          <p class="!text-xl font-bold text-amber-700 !mb-0">{{ summary.exceptions }}</p>
+        </div>
+        <div class="rounded-lg border border-blue-200 bg-blue-50 p-3">
+          <p class="!text-xs text-blue-600 !mb-1">Not Applicable</p>
+          <p class="!text-xl font-bold text-blue-700 !mb-0">{{ summary.not_applicable }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL ACTIONS -->
+    <div class="flex flex-col gap-2 pt-1 pb-4 sm:flex-row sm:items-center sm:justify-end">
+      <button
+        type="button"
+        (click)="resetForm()"
+        [disabled]="loading()"
+        class="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 outline-none hover:bg-slate-50 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Reset
+      </button>
+      <button
+        type="submit"
+        [disabled]="loading()"
+        class="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white outline-none hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        @if (loading()) {
+          Generating Document...
+        } @else {
+          Generate Document
+        }
+      </button>
+    </div>
+  </form>
+</div>

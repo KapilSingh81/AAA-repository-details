@@ -9,6 +9,12 @@ export const ROUTES: Routes = [
     {
         path: 'workspace', component: ManageDashboard,
     },
+   {
+    path: 'master',
+    loadChildren: () =>
+      import('./master/master.routes')
+        .then(m => m.MASTER_ROUTES)
+  },
     {
         path: 'project-details/:id',
         component: ProjectDetails
