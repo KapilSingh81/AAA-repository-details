@@ -30,10 +30,26 @@
                     </button>
                 </div>
 
-                <button class="!rounded-xl bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                <!-- <button class="!rounded-xl bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700"
                     (click)="onAddDocs('')">
                     + Add Document
-                </button>
+                </button> -->
+                 <div class="w-full sm:w-auto relative inline-block" #dropdownWrapper>
+                        <button (click)="toggleDropdown()" class="!rounded-xl bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                            <i class="fa fa-plus"></i> Add Document</button>
+                        @if(isDropdownOpen) {
+                        <div class="absolute right-0 top-10 w-full bg-white rounded-lg shadow-lg py-1 z-[1000]">
+                            <button (click)="onAddDocs('')"
+                                class="w-full px-4 py-2 text-left !text-[12px] text-gray-700 hover:bg-gray-100 flex items-center border-b">
+                                Add Existing Document
+                            </button>
+                            <button (click)="redirecTo('/user/audit/generate-document')"
+                                class="w-full px-4 py-2 text-left !text-[12px] text-gray-700 hover:bg-gray-100 flex items-center">
+                                Generate New Document
+                            </button>
+                        </div>
+                        }
+                    </div>
             </div>
         </div>
 

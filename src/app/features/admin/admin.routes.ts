@@ -1,22 +1,20 @@
-import { Routes } from "@angular/router";
-import { ManageDashboard } from "./dashboard/pages/manage-dashboard/manage-dashboard";
-import { ProjectDetails } from "./dashboard/components/project-detatils/project-detatils";
+import { Routes } from '@angular/router';
+import { ManageDashboard } from './dashboard/pages/manage-dashboard/manage-dashboard';
+import { ProjectDetails } from './dashboard/components/project-detatils/project-detatils';
 
 export const ROUTES: Routes = [
     {
-        path: 'dashboard', loadChildren: () => import('./main-dashboard/main-dashbaord.routes').then(m => m.MAIN_DASHBOARD)
+        path: 'dashboard',
+        loadChildren: () =>
+            import('./main-dashboard/main-dashbaord.routes').then((m) => m.MAIN_DASHBOARD),
     },
     {
-        path: 'workspace', component: ManageDashboard,
+        path: 'audit',
+        loadChildren: () =>
+            import('./dashboard/audit-repository.routes').then((m) => m.ROUTES),
     },
-   {
-    path: 'master',
-    loadChildren: () =>
-      import('./master/master.routes')
-        .then(m => m.MASTER_ROUTES)
-  },
     {
         path: 'project-details/:id',
-        component: ProjectDetails
-    }
-]
+        component: ProjectDetails,
+    },
+];

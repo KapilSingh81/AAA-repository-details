@@ -1,19 +1,19 @@
 export const API_CONSTANT = {
-    //auth api 
-    login: 'v1/token',
-    refreshToken: 'v1/token/refresh',
-    logout: 'v1/token/logout',
-    resetPwd : 'v1/reset-password',
+  //auth api 
+  login: 'v1/token',
+  refreshToken: 'v1/token/refresh',
+  logout: 'v1/token/logout',
+  resetPwd: 'v1/reset-password',
 
-    // document api start here 
-    dashboardList : 'projects',
-    documentTypeList : 'documents/types',
-    addUploadDoumnet : 'documents/upload',
-    documentDetails :'project/details/{projectId}',
+  // document api start here 
+  dashboardList: 'projects',
+  documentTypeList: 'documents/types',
+  addUploadDoumnet: 'documents/upload',
+  documentDetails: 'project/details/{projectId}',
 
-    //dashboard Api start here
-    dashboard : 'dashboard/me' ,
-      generateDocument: 'documents/generate',
-      statusOptions:'documents/generate'
+  //dashboard Api start here
+  dashboard: 'dashboard/me',
+  generateDocument: 'documents/generate',
+  statusOptions: 'documents/status-options'
 
 }

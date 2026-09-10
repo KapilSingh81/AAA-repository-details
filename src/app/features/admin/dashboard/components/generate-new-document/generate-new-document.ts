@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormArray,
@@ -8,54 +9,58 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { DocumentService } from '../../services/document-service';
+import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
+import { Router } from '@angular/router';
 
-import { DocumentMasterService } from '../../services/document-master-service';
+const IP_PATTERN = /^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$/;
+const URL_PATTERN = /^(https?:\/\/)([\w-]+\.)+[\w-]{2,}(:\d+)?(\/[^\s]*)?$/i;
+export const MOBILE_PATTERN = /^[0-9]{10}$/;
 
 @Component({
-  selector: 'app-document-master',
-  standalone: true,
+  selector: 'app-generate-new-document',
   imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './document-master.html',
+  templateUrl: './generate-new-document.html',
+  styleUrl: './generate-new-document.scss',
 })
-export class DocumentMaster {
+export class GenerateNewDocument implements OnInit {
   private readonly fb = inject(FormBuilder);
-  private readonly documentService = inject(DocumentMasterService);
+  private readonly documentService = inject(DocumentService);
+  private readonly destroyRef = inject(DestroyRef);
+  private notificationService = inject(NotificationService);
+  private router = inject(Router)
 
   loading = signal(false);
-  successMessage = signal('');
   errorMessage = signal('');
 
   projectId = signal('');
   reportUrl = signal('');
   certificateUrl = signal('');
-  assetCriticalityOptions = signal<string[]>([]);
-
-  statusOptions = signal<string[]>(['Complied', 'Not Complied', 'Exception', 'Not Applicable']);
-
-  observationTypeOptions = signal<string[]>(['New', 'Repeat']);
+  statusOptions = signal<string[]>([]);
+  observationTypeOptions = signal<string[]>([]);
 
   documentForm = this.fb.group({
-    project_name: ['', Validators.required],
-    client_name: ['', Validators.required],
+    project_name: ['', [Validators.required, Validators.minLength(3)]],
+    client_name: ['', [Validators.required, Validators.minLength(3)]],
     audit_type: ['', Validators.required],
 
     metadata: this.fb.group({
-      document_id: [''],
-      document_version: [''],
-      prepared_by: [''],
-      reviewed_by: [''],
-      approved_by: [''],
-      released_by: [''],
-      release_date: [''],
-      report_release_date: [''],
-      url: [''],
-      public_ip: [''],
-      internal_ip: [''],
-      location: [''],
-      asset_criticality: [''],
-      asset_hash: [''],
-      execution_period: [''],
-      methodology: [''],
+      document_id: ['', Validators.required],
+      document_version: ['', Validators.required],
+      prepared_by: ['', Validators.required],
+      reviewed_by: ['', Validators.required],
+      approved_by: ['', Validators.required],
+      released_by: ['', Validators.required],
+      release_date: ['', Validators.required],
+      report_release_date: ['', Validators.required],
+      url: ['', [Validators.required, Validators.pattern(URL_PATTERN)]],
+      public_ip: ['', [Validators.required, Validators.pattern(IP_PATTERN)]],
+      internal_ip: ['', [Validators.required, Validators.pattern(IP_PATTERN)]],
+      location: ['', Validators.required],
+      asset_criticality: ['', Validators.required],
+      asset_hash: ['', Validators.required],
+      execution_period: ['', Validators.required],
+      methodology: ['', [Validators.required, Validators.minLength(10)]],
     }),
 
     findings: this.fb.array([]),
@@ -72,21 +77,19 @@ export class DocumentMaster {
       exceptions: [0],
       not_applicable: [0],
     }),
-
-    activity_summary: [''],
   });
 
-  constructor() {
+  ngOnInit(): void {
     this.addFinding();
     this.addAuditor();
     this.addTool();
     this.addDistribution();
     this.addAsset();
     this.addControl();
-
     this.loadStatusOptions();
-
-    this.findings.valueChanges.subscribe(() => this.updateSummary());
+    this.findings.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.updateSummary());
   }
 
   get metadata(): FormGroup {
@@ -135,26 +138,19 @@ export class DocumentMaster {
     );
   }
 
-
-
   private loadStatusOptions(): void {
     this.documentService.getStatusOptions().subscribe({
       next: (res: any) => {
-        if (Array.isArray(res?.statuses) && res.statuses.length) {
-          this.statusOptions.set(res.statuses);
+        if (Array.isArray(res?.body?.statuses) && res.body?.statuses.length) {
+          this.statusOptions.set(res.body.statuses);
         }
-
-        if (Array.isArray(res?.observation_types) && res.observation_types.length) {
-          this.observationTypeOptions.set(res.observation_types);
-        }
-
-        if (Array.isArray(res?.asset_criticality) && res.asset_criticality.length) {
-          this.assetCriticalityOptions.set(res.asset_criticality);
+        if (Array.isArray(res?.body?.observation_types) && res.body?.observation_types.length) {
+          this.observationTypeOptions.set(res.body.observation_types);
         }
       },
-
-      error: () => {
-        // API error handling
+      error: (error: any) => {
+        console.error('Failed to load status options', error);
+        this.errorMessage.set('Could not load dropdown options. Please refresh the page.');
       },
     });
   }
@@ -162,19 +158,19 @@ export class DocumentMaster {
   createFinding(): FormGroup {
     return this.fb.group({
       finding_id: [0],
-      affected_asset: [''],
-      observation_title: [''],
-      detailed_observation: [''],
+      affected_asset: ['', Validators.required],
+      observation_title: ['', Validators.required],
+      detailed_observation: ['', [Validators.required, Validators.minLength(10)]],
       cve_cwe: [''],
-      severity: [''],
-      recommendation: [''],
+      severity: ['', Validators.required],
+      recommendation: ['', Validators.required],
       reference: [''],
-      observation_type: ['New'],
+      observation_type: ['', Validators.required],
       evidence: this.fb.group({
         interim: this.fb.array([this.fb.control('')]),
         final: this.fb.array([this.fb.control('')]),
       }),
-      status: [''],
+      status: ['', Validators.required],
     });
   }
 
@@ -240,13 +236,12 @@ export class DocumentMaster {
     final.removeAt(index);
   }
 
-
   createAuditor(): FormGroup {
     return this.fb.group({
-      name: [''],
-      designation: [''],
-      email: [''],
-      certifications: [''],
+      name: ['', Validators.required],
+      designation: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      certifications: ['', Validators.required],
       cert_in_listed: [''],
     });
   }
@@ -265,9 +260,9 @@ export class DocumentMaster {
 
   createTool(): FormGroup {
     return this.fb.group({
-      name: [''],
-      version: [''],
-      license_type: [''],
+      name: ['', Validators.required],
+      version: ['', Validators.required],
+      license_type: ['', Validators.required],
     });
   }
 
@@ -285,10 +280,10 @@ export class DocumentMaster {
 
   createDistribution(): FormGroup {
     return this.fb.group({
-      name: [''],
-      organization: [''],
-      designation: [''],
-      email: [''],
+      name: ['', Validators.required],
+      organization: ['', Validators.required],
+      designation: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
     });
   }
 
@@ -306,14 +301,14 @@ export class DocumentMaster {
 
   createAsset(): FormGroup {
     return this.fb.group({
-      asset_description: [''],
-      criticality: [''],
-      internal_ip: [''],
-      url: [''],
-      public_ip: [''],
-      location: [''],
-      hash_value: [''],
-      version: [''],
+      asset_description: ['', Validators.required],
+      criticality: ['', Validators.required],
+      internal_ip: ['', [Validators.required, Validators.pattern(IP_PATTERN)]],
+      url: ['', [Validators.required, Validators.pattern(URL_PATTERN)]],
+      public_ip: ['', [Validators.required, Validators.pattern(IP_PATTERN)]],
+      location: ['', Validators.required],
+      hash_value: ['', Validators.required],
+      version: ['', Validators.required],
       other_details: [''],
     });
   }
@@ -332,10 +327,10 @@ export class DocumentMaster {
 
   createControl(): FormGroup {
     return this.fb.group({
-      control_id: [''],
-      control_name: [''],
-      description: [''],
-      status: [''],
+      control_id: ['', Validators.required],
+      control_name: ['', Validators.required],
+      description: ['', Validators.required],
+      status: ['Not Applicable', Validators.required],
       remarks: [''],
     });
   }
@@ -372,7 +367,6 @@ export class DocumentMaster {
       (item: any) => this.normalizeStatus(item.status) === 'not applicable',
     ).length;
 
-
     this.documentForm.get('summary')?.patchValue(
       {
         total_observations: total,
@@ -406,40 +400,39 @@ export class DocumentMaster {
       assets: formValue.assets,
       controls: formValue.controls,
       summary: formValue.summary,
-      activity_summary: formValue.activity_summary,
     };
   }
 
   generateDocument(): void {
     if (this.documentForm.invalid) {
       this.documentForm.markAllAsTouched();
+      this.errorMessage.set('Please fix the highlighted fields before generating the document.');
       return;
-    }
-
+    };
     this.updateSummary();
-
     const payload = this.getPayload();
-
     this.loading.set(true);
-    this.successMessage.set('');
     this.errorMessage.set('');
     this.reportUrl.set('');
     this.certificateUrl.set('');
 
     this.documentService.generateDocument(payload).subscribe({
       next: (res: any) => {
+        console.log(res);
         this.loading.set(false);
-        this.successMessage.set(res?.message || 'Document generated successfully.');
-        this.errorMessage.set('');
-
-        this.projectId.set(res?.project_id || '');
-        this.reportUrl.set(res?.report_download_url || '');
-        this.certificateUrl.set(res?.certificate_download_url || '');
+        if (res?.code == 200) {
+          this.notificationService.success(res?.message || 'Upload successful');
+          this.resetForm();
+          setTimeout(() => {
+            this.router.navigateByUrl('user/audit/repository')
+          }, 2000)
+        } else {
+          this.notificationService.error(res?.message || 'Document generation failed.');
+        }
       },
       error: (error: any) => {
         this.loading.set(false);
-        this.successMessage.set('');
-        this.errorMessage.set(error?.error?.message || 'Document generation failed.');
+        this.notificationService.error(error?.error?.message || 'Document generation failed.');
       },
     });
   }
@@ -474,7 +467,6 @@ export class DocumentMaster {
         exceptions: 0,
         not_applicable: 0,
       },
-      activity_summary: '',
     });
 
     this.clearArray(this.findings);
@@ -492,7 +484,6 @@ export class DocumentMaster {
     this.addControl();
 
     this.loading.set(false);
-    this.successMessage.set('');
     this.errorMessage.set('');
     this.projectId.set('');
     this.reportUrl.set('');
@@ -505,7 +496,4 @@ export class DocumentMaster {
     array.clear();
   }
 
-  trackByIndex(index: number): number {
-    return index;
-  }
 }

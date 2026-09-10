@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { DocumentMaster } from './document-master';
+import { GenerateNewDocument } from './generate-new-document';
 
-describe('DocumentMaster', () => {
-  let component: DocumentMaster;
-  let fixture: ComponentFixture<DocumentMaster>;
+describe('GenerateNewDocument', () => {
+  let component: GenerateNewDocument;
+  let fixture: ComponentFixture<GenerateNewDocument>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DocumentMaster],
+      imports: [GenerateNewDocument],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(DocumentMaster);
+    fixture = TestBed.createComponent(GenerateNewDocument);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

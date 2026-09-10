@@ -401,5 +401,14 @@ export class ManageDashboard {
 
   onShowProjectDetails(doc: any) {
     this.router.navigate(['/user/project-details', doc.id]);
+  };
+
+   isDropdownOpen: boolean = false;
+  toggleDropdown() {
+    this.isDropdownOpen = !this.isDropdownOpen;
+  };
+
+  redirecTo(path:any) {
+    this.router.navigateByUrl(path)
   }
 }
