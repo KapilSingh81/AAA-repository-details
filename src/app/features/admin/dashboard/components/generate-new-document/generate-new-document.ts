@@ -11,7 +11,7 @@ import {
 } from '@angular/forms';
 import { DocumentService } from '../../services/document-service';
 import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonService } from '../../../../shared/services/common-services/common-service';
 
 const IP_PATTERN = /^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$/;
@@ -31,7 +31,8 @@ export class GenerateNewDocument implements OnInit {
   private notificationService = inject(NotificationService);
   private router = inject(Router);
   private commonService = inject(CommonService);
-  private cdr = inject(ChangeDetectorRef)
+  private cdr = inject(ChangeDetectorRef);
+  private route = inject(ActivatedRoute)
 
   loading = signal(false);
   errorMessage = signal('');
@@ -44,6 +45,8 @@ export class GenerateNewDocument implements OnInit {
   isDraft = signal(false);
   label = signal<string>('Generate');
   documentTypeList: any;
+  documentId = signal<any>(0);
+  documentDataByid = signal(null)
 
   documentForm = this.fb.group({
     project_name: ['', [Validators.required, Validators.minLength(3)]],
@@ -65,7 +68,8 @@ export class GenerateNewDocument implements OnInit {
       location: ['', Validators.required],
       asset_criticality: ['', Validators.required],
       asset_hash: ['', Validators.required],
-      execution_period: ['', Validators.required],
+      execution_period_from: ['', Validators.required],
+      execution_period_to: ['', Validators.required],
       methodology: ['', [Validators.required, Validators.minLength(10)]],
     }),
 
@@ -86,12 +90,21 @@ export class GenerateNewDocument implements OnInit {
   });
 
   ngOnInit(): void {
-    this.addFinding();
-    this.addAuditor();
-    this.addTool();
-    this.addDistribution();
-    this.addAsset();
-    this.addControl();
+    const id = this.route.snapshot.paramMap.get('id');
+    this.documentId.set(id ? id : 0);
+
+    if (this.documentId()) {
+      this.label.set('Update');
+      this.getDocumentById();
+    } else {
+      this.addFinding();
+      this.addAuditor();
+      this.addTool();
+      this.addDistribution();
+      this.addAsset();
+      this.addControl();
+    }
+
     this.loadStatusOptions();
     this.getDocumentTypeList();
     this.findings.valueChanges
@@ -125,6 +138,17 @@ export class GenerateNewDocument implements OnInit {
 
   get controls(): FormArray {
     return this.documentForm.get('controls') as FormArray;
+  };
+
+  private buildExecutionPeriod(from: any, to: any): any {
+    if (!from && !to) return '';
+    return `${from} to ${to}`;
+  }
+
+  private parseExecutionPeriod(value: string | undefined | null): { from: string; to: string } {
+    if (!value) return { from: '', to: '' };
+    const parts = value.split(' to ').map((p) => p.trim());
+    return { from: parts[0] ?? '', to: parts[1] ?? '' };
   }
 
   get summary(): {
@@ -357,6 +381,15 @@ export class GenerateNewDocument implements OnInit {
 
   getPayload(): any {
     const formValue = this.documentForm.getRawValue();
+    const metadata:any = {
+      ...formValue.metadata,
+      execution_period: this.buildExecutionPeriod(
+        formValue.metadata.execution_period_from,
+        formValue.metadata.execution_period_to,
+      ),
+    };
+    delete (metadata as any).execution_period_from;
+    delete (metadata as any).execution_period_to;
 
     return {
       project_name: formValue.project_name,
@@ -375,39 +408,45 @@ export class GenerateNewDocument implements OnInit {
   }
 
   generateDocument(): void {
-    if (this.documentForm.invalid) {
-      this.documentForm.markAllAsTouched();
-      this.errorMessage.set('Please fix the highlighted fields before generating the document.');
-      return;
-    };
-    this.updateSummary();
-    const payload = this.getPayload();
-    this.loading.set(true);
-    this.errorMessage.set('');
-    this.reportUrl.set('');
-    this.certificateUrl.set('');
-    console.log(payload);
-
-    this.documentService.generateDocument(payload).subscribe({
-      next: (res: any) => {
-        console.log(res);
-        this.loading.set(false);
-        if (res?.code == 200) {
-          this.notificationService.success(res?.message || 'Upload successful');
-          this.resetForm();
-          setTimeout(() => {
-            this.router.navigateByUrl('user/audit/repository')
-          }, 2000)
-        } else {
-          this.notificationService.error(res?.message || 'Document generation failed.');
-        }
-      },
-      error: (error: any) => {
-        this.loading.set(false);
-        this.notificationService.error(error?.error?.message || 'Document generation failed.');
-      },
-    });
+  if (this.documentForm.invalid) {
+    this.documentForm.markAllAsTouched();
+    this.errorMessage.set('Please fix the highlighted fields before generating the document.');
+    return;
   }
+
+  this.updateSummary();
+  const payload = this.getPayload();
+  this.loading.set(true);
+  this.errorMessage.set('');
+  this.reportUrl.set('');
+  this.certificateUrl.set('');
+
+  const shouldUpdate = !!this.documentId() && !this.isDraft();
+
+  const service = shouldUpdate
+    ? this.documentService.updateDocument(payload, this.documentId())
+    : this.documentService.generateDocument(payload);
+
+  service.subscribe({
+    next: (res: any) => {
+      console.log(res);
+      this.loading.set(false);
+      if (res?.body?.code == 200) {
+        this.notificationService.success(res?.body?.message || 'Upload successful');
+        this.resetForm();
+        setTimeout(() => {
+          this.router.navigateByUrl('user/audit/repository');
+        }, 2000);
+      } else {
+        this.notificationService.error(res?.body?.message || 'Document generation failed.');
+      }
+    },
+    error: (error: any) => {
+      this.loading.set(false);
+      this.notificationService.error(error?.error?.message || 'Document generation failed.');
+    },
+  });
+}
 
   resetForm(): void {
     this.documentForm.reset({
@@ -429,7 +468,8 @@ export class GenerateNewDocument implements OnInit {
         location: '',
         asset_criticality: '',
         asset_hash: '',
-        execution_period: '',
+        execution_period_from: '',
+        execution_period_to: '',
         methodology: '',
       },
       summary: {
@@ -476,6 +516,85 @@ export class GenerateNewDocument implements OnInit {
     this.commonService.documentTypeList().subscribe((res: any) => {
       this.documentTypeList = res?.body?.types || [];
       this.cdr.detectChanges();
+    });
+  };
+
+  getDocumentById(): void {
+    this.loading.set(true);
+    this.documentService.documentById(this.documentId()).subscribe({
+      next: (res: any) => {
+        const data = res?.body || null;
+        this.documentDataByid.set(data);
+        if (data) {
+          this.patchFormWithData(data);
+        }
+        this.loading.set(false);
+      },
+      error: (error: any) => {
+        this.loading.set(false);
+        this.notificationService.error(error?.error?.message || 'Failed to load document.');
+      },
+    });
+  };
+
+  private patchFormWithData(data: any): void {
+    const execPeriod = this.parseExecutionPeriod(data.metadata?.execution_period);
+
+    this.documentForm.patchValue({
+      project_name: data.project_name,
+      client_name: data.client_name,
+      audit_type: data.audit_type,
+      metadata: {
+        document_id: data.metadata?.document_id,
+        document_version: data.metadata?.document_version,
+        prepared_by: data.metadata?.prepared_by,
+        reviewed_by: data.metadata?.reviewed_by,
+        approved_by: data.metadata?.approved_by,
+        released_by: data.metadata?.released_by,
+        release_date: data.metadata?.release_date,
+        report_release_date: data.metadata?.report_release_date,
+        url: data.metadata?.url,
+        public_ip: data.metadata?.public_ip,
+        internal_ip: data.metadata?.internal_ip,
+        location: data.metadata?.location,
+        asset_criticality: data.metadata?.asset_criticality,
+        asset_hash: data.metadata?.asset_hash,
+        execution_period_from: execPeriod.from,
+        execution_period_to: execPeriod.to,
+        methodology: data.metadata?.methodology,
+      },
+      summary: {
+        total_observations: data.summary?.total_observations ?? 0,
+        complied: data.summary?.complied ?? 0,
+        not_complied: data.summary?.not_complied ?? 0,
+        exceptions: data.summary?.exceptions ?? 0,
+        not_applicable: data.summary?.not_applicable ?? 0,
+      },
+    });
+
+    this.isDraft.set(String(data.status ?? '').toLowerCase() === 'draft');
+
+    this.patchArray(this.findings, data.findings, () => this.createFinding());
+    this.patchArray(this.auditors, data.auditors, () => this.createAuditor());
+    this.patchArray(this.tools, data.tools, () => this.createTool());
+    this.patchArray(this.distribution, data.distribution, () => this.createDistribution());
+    this.patchArray(this.assets, data.assets, () => this.createAsset());
+    this.patchArray(this.controls, data.controls, () => this.createControl());
+
+    this.updateSummary();
+  }
+
+  private patchArray(
+    formArray: FormArray,
+    items: any[] | undefined,
+    factory: () => FormGroup,
+  ): void {
+    formArray.clear();
+    const list = Array.isArray(items) && items.length ? items : [{}];
+    list.forEach((item) => {
+      const group = factory();
+      group.patchValue(item ?? {});
+      formArray.push(group);
     });
   }
 

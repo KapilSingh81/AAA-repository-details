@@ -53,5 +53,17 @@ export class DocumentService {
     return this.apiService.get(url).pipe(
       catchError((error: HttpErrorResponse) => of(error))
     );
-  }
+  };
+
+  documentById(id:any): Observable<any> {
+    const url = API_CONSTANT.documentById.replace('{id}', id);
+    return this.apiService.get(url).pipe(
+      catchError((error: HttpErrorResponse) => of(error))
+    );
+  };
+
+  updateDocument(payload: any, id:any): Observable<any> {
+    const url = API_CONSTANT.updateDocument?.replace('{id}', id);
+    return this.apiService.put(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)))
+  };
 }

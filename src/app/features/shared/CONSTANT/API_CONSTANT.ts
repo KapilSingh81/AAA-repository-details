@@ -14,6 +14,8 @@ export const API_CONSTANT = {
   //dashboard Api start here
   dashboard: 'dashboard/me',
   generateDocument: 'documents/generate',
-  statusOptions: 'documents/status-options'
+  statusOptions: 'documents/status-options',
+  documentById : 'documents/generate/{id}',
+  updateDocument : 'documents/draft/{id}'
 
 }
