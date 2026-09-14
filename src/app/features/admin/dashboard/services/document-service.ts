@@ -13,8 +13,8 @@ export class DocumentService {
 
   dashboardList(data: any): Observable<any> {
     let params: any = {
-      page : data?.page,
-      limit : data?.limit
+      page: data?.page,
+      limit: data?.limit
     };
     if (data?.uuid) {
       params.uuid = data.uuid;
@@ -41,4 +41,17 @@ export class DocumentService {
       .get(url)
       .pipe(catchError((error: HttpErrorResponse) => of(error)));
   };
+
+  generateDocument(payload: any): Observable<any> {
+    const url = API_CONSTANT.generateDocument;
+    return this.apiService.post(url, payload);
+  }
+
+
+  getStatusOptions(): Observable<any> {
+    const url = API_CONSTANT.statusOptions;
+    return this.apiService.get(url).pipe(
+      catchError((error: HttpErrorResponse) => of(error))
+    );
+  }
 }

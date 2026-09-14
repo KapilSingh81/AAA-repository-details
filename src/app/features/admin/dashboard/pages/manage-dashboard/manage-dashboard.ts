@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, signal, computed, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, signal, computed, inject, ChangeDetectorRef, HostListener, ElementRef, ViewChild } from '@angular/core';
 import { BsModalRef, BsModalService, ModalOptions } from 'ngx-bootstrap/modal';
 import { AddDocment } from '../../components/add-docment/add-docment';
 import { DocumentService } from '../../services/document-service';
@@ -19,6 +19,7 @@ interface Document {
   report_download_url: string;
   certificate_download_url: string;
   created_at: string;
+  is_generated: boolean
 }
 
 @Component({
@@ -35,6 +36,7 @@ export class ManageDashboard {
   private router = inject(Router);
   private notification = inject(NotificationService);
   private cookieService = inject(CookieService);
+  private eRef = inject(ElementRef);
 
   viewMode = signal<'table' | 'card'>('table');
   currentPage = signal(1);
@@ -401,5 +403,30 @@ export class ManageDashboard {
 
   onShowProjectDetails(doc: any) {
     this.router.navigate(['/user/project-details', doc.id]);
+  };
+
+  @ViewChild('dropdownWrapper') dropdownWrapper!: ElementRef;
+
+  isDropdownOpen: boolean = false;
+  toggleDropdown(event: MouseEvent) {
+    event.stopPropagation();
+    this.isDropdownOpen = !this.isDropdownOpen;
+  };
+
+  @HostListener('document:click', ['$event'])
+  clickOutside(event: Event) {
+    if (this.isDropdownOpen &&
+      this.dropdownWrapper &&
+      !this.dropdownWrapper.nativeElement.contains(event.target)) {
+      this.isDropdownOpen = false;
+    }
+  }
+
+  redirecTo(path: any, id: any) {
+    if (id) {
+      this.router.navigate([path, id]);
+    } else {
+      this.router.navigateByUrl(path);
+    }
   }
 }
