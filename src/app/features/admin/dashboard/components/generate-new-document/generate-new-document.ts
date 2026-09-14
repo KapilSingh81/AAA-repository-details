@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -12,6 +12,7 @@ import {
 import { DocumentService } from '../../services/document-service';
 import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
 import { Router } from '@angular/router';
+import { CommonService } from '../../../../shared/services/common-services/common-service';
 
 const IP_PATTERN = /^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$/;
 const URL_PATTERN = /^(https?:\/\/)([\w-]+\.)+[\w-]{2,}(:\d+)?(\/[^\s]*)?$/i;
@@ -28,7 +29,9 @@ export class GenerateNewDocument implements OnInit {
   private readonly documentService = inject(DocumentService);
   private readonly destroyRef = inject(DestroyRef);
   private notificationService = inject(NotificationService);
-  private router = inject(Router)
+  private router = inject(Router);
+  private commonService = inject(CommonService);
+  private cdr = inject(ChangeDetectorRef)
 
   loading = signal(false);
   errorMessage = signal('');
@@ -38,6 +41,9 @@ export class GenerateNewDocument implements OnInit {
   certificateUrl = signal('');
   statusOptions = signal<string[]>([]);
   observationTypeOptions = signal<string[]>([]);
+  isDraft = signal(false);
+  label = signal<string>('Generate');
+  documentTypeList: any;
 
   documentForm = this.fb.group({
     project_name: ['', [Validators.required, Validators.minLength(3)]],
@@ -87,6 +93,7 @@ export class GenerateNewDocument implements OnInit {
     this.addAsset();
     this.addControl();
     this.loadStatusOptions();
+    this.getDocumentTypeList();
     this.findings.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.updateSummary());
@@ -167,8 +174,8 @@ export class GenerateNewDocument implements OnInit {
       reference: [''],
       observation_type: ['', Validators.required],
       evidence: this.fb.group({
-        interim: this.fb.array([this.fb.control('')]),
-        final: this.fb.array([this.fb.control('')]),
+        interim: [null],
+        final: [null],
       }),
       status: ['', Validators.required],
     });
@@ -198,43 +205,6 @@ export class GenerateNewDocument implements OnInit {
     });
   }
 
-  getEvidence(finding: AbstractControl): FormGroup {
-    return finding.get('evidence') as FormGroup;
-  }
-
-  getInterim(finding: AbstractControl): FormArray {
-    return finding.get('evidence.interim') as FormArray;
-  }
-
-  getFinal(finding: AbstractControl): FormArray {
-    return finding.get('evidence.final') as FormArray;
-  }
-
-  addInterim(finding: AbstractControl): void {
-    this.getInterim(finding).push(this.fb.control(''));
-  }
-
-  removeInterim(finding: AbstractControl, index: number): void {
-    const interim = this.getInterim(finding);
-    if (interim.length <= 1) {
-      interim.at(0)?.reset();
-      return;
-    }
-    interim.removeAt(index);
-  }
-
-  addFinal(finding: AbstractControl): void {
-    this.getFinal(finding).push(this.fb.control(''));
-  }
-
-  removeFinal(finding: AbstractControl, index: number): void {
-    const final = this.getFinal(finding);
-    if (final.length <= 1) {
-      final.at(0)?.reset();
-      return;
-    }
-    final.removeAt(index);
-  }
 
   createAuditor(): FormGroup {
     return this.fb.group({
@@ -400,6 +370,7 @@ export class GenerateNewDocument implements OnInit {
       assets: formValue.assets,
       controls: formValue.controls,
       summary: formValue.summary,
+      document_generate: !this.isDraft(),
     };
   }
 
@@ -415,6 +386,7 @@ export class GenerateNewDocument implements OnInit {
     this.errorMessage.set('');
     this.reportUrl.set('');
     this.certificateUrl.set('');
+    console.log(payload);
 
     this.documentService.generateDocument(payload).subscribe({
       next: (res: any) => {
@@ -494,6 +466,17 @@ export class GenerateNewDocument implements OnInit {
 
   private clearArray(array: FormArray): void {
     array.clear();
+  };
+
+  goBack() {
+    this.router.navigate(['/user/audit/repository']);
+  };
+
+  getDocumentTypeList() {
+    this.commonService.documentTypeList().subscribe((res: any) => {
+      this.documentTypeList = res?.body?.types || [];
+      this.cdr.detectChanges();
+    });
   }
 
 }

@@ -10,5 +10,9 @@ export const ROUTES: Routes = [
     {
         path: 'generate-document',
         component: GenerateNewDocument
+    },
+     {
+        path: 'generate-document/:id',
+        component: GenerateNewDocument
     }
 ]

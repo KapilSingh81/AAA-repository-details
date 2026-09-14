@@ -293,7 +293,7 @@ export class ProjectDetails implements OnInit {
   }
 
   goBack() {
-    this.router.navigate(['/user/workspace']);
+    this.router.navigate(['/user/audit/repository']);
   }
 
   getTotalFindings(): number {
