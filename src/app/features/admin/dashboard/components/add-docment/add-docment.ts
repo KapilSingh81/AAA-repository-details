@@ -47,7 +47,6 @@ export class AddDocment {
     this.commonService.documentTypeList().subscribe((res: any) => {
       this.documentTypeList = res?.body?.types || []
       this.cdr.detectChanges();
-      console.log(this.documentTypeList);
     })
   }
 

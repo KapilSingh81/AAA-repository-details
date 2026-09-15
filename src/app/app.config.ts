@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -6,6 +6,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpInterceptorService } from './features/shared/services/interceptors/http.interceptor';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideToastr } from 'ngx-toastr';
+import { AuthService } from './features/shared/services/auth-service/auth-service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -23,5 +24,6 @@ export const appConfig: ApplicationConfig = {
       preventDuplicates: true,
       newestOnTop: true,
     }),
+    provideAppInitializer(() => inject(AuthService).restoreSession()),
   ]
 };

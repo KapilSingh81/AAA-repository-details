@@ -1,0 +1,78 @@
+<div class="flex modal-header text-center">
+    <h5>
+       Generate New Document
+    </h5>
+    <div class="close-modal" (click)="close($event)">
+        <i class="fa fa-close" style="cursor: pointer;"></i>
+    </div>
+</div>
+
+<div class="modal-body">
+    <form [formGroup]="documentForm" (ngSubmit)="onSubmit($event, documentForm.value)">
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Project Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Project Name"
+                    formControlName="project_name" />
+                @if (documentForm.get('project_name')?.touched && documentForm.get('project_name')?.invalid) {
+                <div class="text-danger">
+                    @if (documentForm.get('project_name')?.errors?.['required']) {
+                    <div>Project name is required</div>
+                    }
+                    @if (documentForm.get('project_name')?.errors?.['minlength']) {
+                    <div>Minimum 3 characters required</div>
+                    }
+                </div>
+                }
+            </div>
+
+            <!-- Client Name -->
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Client Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Client Name" formControlName="client_name" />
+                @if (documentForm.get('client_name')?.touched && documentForm.get('client_name')?.invalid) {
+                <div class="text-danger">
+                    @if (documentForm.get('client_name')?.errors?.['required']) {
+                    <div>Client name is required</div>
+                    }
+                    @if (documentForm.get('client_name')?.errors?.['minlength']) {
+                    <div>Minimum 3 characters required</div>
+                    }
+                </div>
+                }
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Audit Type  <span class="text-danger">*</span></label>
+                <select class="form-select" formControlName="type">
+                    <option value="">Select Audit Type </option>
+                    @for (type of documentTypeList; track type) {
+                    <option value="{{type}}">
+                        {{type}}
+                    </option>
+                    }
+                </select>
+                @if (documentForm.get('type')?.touched && documentForm.get('type')?.invalid) {
+                <div class="text-danger">
+                    <div>Document type is required</div>
+                </div>
+                }
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="button-container">
+                <button class="btn btn-success" type="submit">
+                    @if (isLoading()) {
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    Generating...
+                    } @else {
+                    <i class="fas fa-upload me-1"></i> Generate
+                    }
+                </button>
+                <button class="btn btn-danger" type="button" (click)="close($event)">
+                    Clear
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

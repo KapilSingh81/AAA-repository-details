@@ -198,11 +198,49 @@ export class GenerateNewDocument implements OnInit {
       reference: [''],
       observation_type: ['', Validators.required],
       evidence: this.fb.group({
-        interim: [null],
-        final: [null],
+        interim: this.fb.array([this.fb.control('')]),
+        final: this.fb.array([this.fb.control('')]),
       }),
       status: ['', Validators.required],
     });
+  };
+
+  getEvidence(finding: AbstractControl): FormGroup {
+    return finding.get('evidence') as FormGroup;
+  }
+
+  getInterim(finding: AbstractControl): FormArray {
+    return finding.get('evidence.interim') as FormArray;
+  }
+
+  getFinal(finding: AbstractControl): FormArray {
+    return finding.get('evidence.final') as FormArray;
+  }
+
+  addInterim(finding: AbstractControl): void {
+    this.getInterim(finding).push(this.fb.control(''));
+  }
+
+  removeInterim(finding: AbstractControl, index: number): void {
+    const interim = this.getInterim(finding);
+    if (interim.length <= 1) {
+      interim.at(0)?.reset();
+      return;
+    }
+    interim.removeAt(index);
+  }
+
+  addFinal(finding: AbstractControl): void {
+    this.getFinal(finding).push(this.fb.control(''));
+  }
+
+  removeFinal(finding: AbstractControl, index: number): void {
+    const final = this.getFinal(finding);
+    if (final.length <= 1) {
+      final.at(0)?.reset();
+      return;
+    }
+    final.removeAt(index);
   }
 
   addFinding(): void {
@@ -381,7 +419,7 @@ export class GenerateNewDocument implements OnInit {
 
   getPayload(): any {
     const formValue = this.documentForm.getRawValue();
-    const metadata:any = {
+    const metadata: any = {
       ...formValue.metadata,
       execution_period: this.buildExecutionPeriod(
         formValue.metadata.execution_period_from,
@@ -402,51 +440,51 @@ export class GenerateNewDocument implements OnInit {
       distribution: formValue.distribution,
       assets: formValue.assets,
       controls: formValue.controls,
-      summary: formValue.summary,
+      activity_summary : '',
       document_generate: !this.isDraft(),
     };
   }
 
   generateDocument(): void {
-  if (this.documentForm.invalid) {
-    this.documentForm.markAllAsTouched();
-    this.errorMessage.set('Please fix the highlighted fields before generating the document.');
-    return;
+    if (this.documentForm.invalid) {
+      this.documentForm.markAllAsTouched();
+      this.errorMessage.set('Please fix the highlighted fields before generating the document.');
+      return;
+    }
+
+    this.updateSummary();
+    const payload = this.getPayload();
+    this.loading.set(true);
+    this.errorMessage.set('');
+    this.reportUrl.set('');
+    this.certificateUrl.set('');
+
+    const shouldUpdate = !!this.documentId() && !this.isDraft();
+
+    const service = shouldUpdate
+      ? this.documentService.updateDocument(payload, this.documentId())
+      : this.documentService.generateDocument(payload);
+
+    service.subscribe({
+      next: (res: any) => {
+        console.log(res);
+        this.loading.set(false);
+        if (res?.body?.code == 200) {
+          this.notificationService.success(res?.body?.message || 'Upload successful');
+          this.resetForm();
+          setTimeout(() => {
+            this.router.navigateByUrl('user/audit/repository');
+          }, 2000);
+        } else {
+          this.notificationService.error(res?.body?.message || 'Document generation failed.');
+        }
+      },
+      error: (error: any) => {
+        this.loading.set(false);
+        this.notificationService.error(error?.error?.message || 'Document generation failed.');
+      },
+    });
   }
-
-  this.updateSummary();
-  const payload = this.getPayload();
-  this.loading.set(true);
-  this.errorMessage.set('');
-  this.reportUrl.set('');
-  this.certificateUrl.set('');
-
-  const shouldUpdate = !!this.documentId() && !this.isDraft();
-
-  const service = shouldUpdate
-    ? this.documentService.updateDocument(payload, this.documentId())
-    : this.documentService.generateDocument(payload);
-
-  service.subscribe({
-    next: (res: any) => {
-      console.log(res);
-      this.loading.set(false);
-      if (res?.body?.code == 200) {
-        this.notificationService.success(res?.body?.message || 'Upload successful');
-        this.resetForm();
-        setTimeout(() => {
-          this.router.navigateByUrl('user/audit/repository');
-        }, 2000);
-      } else {
-        this.notificationService.error(res?.body?.message || 'Document generation failed.');
-      }
-    },
-    error: (error: any) => {
-      this.loading.set(false);
-      this.notificationService.error(error?.error?.message || 'Document generation failed.');
-    },
-  });
-}
 
   resetForm(): void {
     this.documentForm.reset({

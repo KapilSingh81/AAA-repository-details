@@ -10,6 +10,7 @@ import { Router } from '@angular/router';
 import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
 import { CookieService } from 'ngx-cookie-service';
 import { FormsModule } from '@angular/forms';
+import { GenerateProjectPopup } from '../../components/generate-project-popup/generate-project-popup';
 
 interface Document {
   id: string;
@@ -428,5 +429,30 @@ export class ManageDashboard {
     } else {
       this.router.navigateByUrl(path);
     }
-  }
+  };
+
+  onGenerateDocument(value: any) {
+    const initialState: ModalOptions = {
+      initialState: {
+        editData: value ? value : ''
+      },
+    };
+    this.bsModalRef = this.modalService.show(
+      GenerateProjectPopup,
+      Object.assign(initialState, {
+        id: "confirmation",
+        class: 'modal-lg modal-dialog-centered alert-popup',
+      })
+    );
+    this.bsModalRef?.content.mapdata.subscribe(
+      (value: any) => {
+        this.searchName.set('');
+        this.selectedType.set('');
+        this.searchSubject.next('');
+        this.currentPage.set(1);
+        this.pageSize.set(10);
+        this.getDocumentList();
+      }
+    );
+  };
 }

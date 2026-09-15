@@ -1,7 +1,19 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpService } from '../http.services.ts/http.services';
-import { catchError, Observable, of, finalize } from 'rxjs';
+import {
+  BehaviorSubject,
+  catchError,
+  filter,
+  from,
+  map,
+  Observable,
+  of,
+  switchMap,
+  take,
+  tap,
+  throwError,
+} from 'rxjs';
 import { API_CONSTANT } from '../../CONSTANT/API_CONSTANT';
 import { HttpErrorResponse } from '@angular/common/http';
 import { StorageService } from '../storage-service/storage.service';
@@ -12,7 +24,6 @@ import { NotificationService } from '../notification-service/notificaiton';
   providedIn: 'root',
 })
 export class AuthService {
-
   private apiService = inject(HttpService);
   private storage = inject(StorageService);
   private router = inject(Router);
@@ -21,174 +32,207 @@ export class AuthService {
 
   private authRefreshTimeout: any;
   isRefreshing = signal(false);
+
   private isLoggingOut = false;
-  private isRefreshingToken = false;
   private redirectingToLogin = false;
 
+  /** single-flight refresh ke liye */
+  private refreshInProgress = false;
+  private refreshSubject = new BehaviorSubject<string | null>(null);
+
+  // ---------------------------------------------------------------- API calls
+
   login(payload: any): Observable<any> {
-    let url = API_CONSTANT.login;
     return this.apiService
-      .post(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)));
-  };
+      .post(API_CONSTANT.login, payload)
+      .pipe(catchError((error: HttpErrorResponse) => of(error)));
+  }
 
   logout(payload: any): Observable<any> {
-    let url = API_CONSTANT.logout;
     return this.apiService
-      .post(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)));
-  };
+      .post(API_CONSTANT.logout, payload)
+      .pipe(catchError((error: HttpErrorResponse) => of(error)));
+  }
 
-  refreshTokenRequest(payload: any): Observable<any> {
-    let url = API_CONSTANT.refreshToken;
+  resetPwd(payload: any): Observable<any> {
     return this.apiService
-      .post(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)));
-  };
+      .post(API_CONSTANT.resetPwd, payload)
+      .pipe(catchError((error: HttpErrorResponse) => of(error)));
+  }
 
-  startTimer(expiresIn: number) {
-    const timeout = (expiresIn - 60) * 1000;
+  // ------------------------------------------------------------ session setup
+
+
+  setSession(body: any): void {
+    const cookieExpiry = new Date(body?.tokenExpiredOn);
+
+    this.cookieService.set('aaa-token', body.access_token, {
+      path: '/',
+      secure: false,
+      sameSite: 'Lax',
+      expires: cookieExpiry,
+    });
+
+    this.storage.setItem('aaa-user', body);
+    this.startTimer(body.expires_in);
+  }
+
+  startTimer(expiresIn: number): void {
     clearTimeout(this.authRefreshTimeout);
+    const timeout = Math.max((expiresIn - 60) * 1000, 0);
     this.authRefreshTimeout = setTimeout(() => {
-      this.refreshToken();
+      this.getFreshToken().subscribe({ error: () => {} });
     }, timeout);
   }
 
-  async refreshToken() {
-    // Prevent multiple refresh attempts
-    if (this.isRefreshingToken) {
-      return;
-    }
-    
-    try {
-      const refreshToken: any = await this.storage.getItem('aaa-user');
-      if (!refreshToken) {
-        this.performClientCleanup();
-        return;
-      }
-      
-      this.isRefreshingToken = true;
-      this.isRefreshing.set(true);
-      
-      let payload = {
-        refresh_token: refreshToken?.refresh_token
-      };
-      
-      this.refreshTokenRequest(payload).subscribe({
-        next: (res: any) => {
-          this.isRefreshingToken = false;
-          this.isRefreshing.set(false);
-          
-          if (res?.body?.code === 200) {
-            const tokens = res?.body;
-            this.cookieService.set('aaa-token', tokens.access_token, {
-              path: '/',
-              secure: false,
-              sameSite: 'Lax',
-              expires: new Date(tokens.tokenExpiredOn),
-            });
-            if (tokens.refresh_token) {
-              this.storage.setItem('aaa-user', tokens);
-            }
-            this.startTimer(tokens.expires_in);
-          } else {
-            // Refresh token failed - clear session
-            this.performClientCleanup();
-          }
-        },
-        error: (err) => {
-          this.isRefreshingToken = false;
-          this.isRefreshing.set(false);
-          console.error('Refresh token error:', err);
-          this.performClientCleanup();
-        }
+  async restoreSession(): Promise<void> {
+    const user: any = await this.storage.getItem('aaa-user');
+    if (!user?.refresh_token) return;
+
+    const secondsLeft = this.getSecondsLeft();
+
+    if (secondsLeft > 60) {
+      this.startTimer(secondsLeft);
+    } else {
+      await new Promise<void>((resolve) => {
+        this.getFreshToken().subscribe({
+          next: () => resolve(),
+          error: () => resolve(),
+        });
       });
-    } catch (error) {
-      this.isRefreshingToken = false;
-      this.isRefreshing.set(false);
-      console.error('Refresh token error:', error);
-      this.performClientCleanup();
     }
   }
 
-  // Check if token is valid (not expired)
-  isTokenValid(): boolean {
+  // ------------------------------------------------------------------ refresh
+
+  private refreshAccessToken(): Observable<string> {
+    return from(this.storage.getItem('aaa-user')).pipe(
+      switchMap((user: any) => {
+        if (!user?.refresh_token) {
+          return throwError(() => new Error('No refresh token'));
+        }
+        return this.apiService.post(API_CONSTANT.refreshToken, {
+          refresh_token: user.refresh_token,
+        });
+      }),
+      map((res: any) => {
+        const body = res?.body;
+        if (body?.code !== 200 || !body?.access_token) {
+          throw new Error(body?.message || 'Refresh failed');
+        }
+        this.setSession(body);
+        return body.access_token as string;
+      }),
+    );
+  }
+
+  getFreshToken(): Observable<string> {
+    if (this.refreshInProgress) {
+      return this.refreshSubject.pipe(
+        filter((t): t is string => !!t),
+        take(1),
+      );
+    }
+
+    this.refreshInProgress = true;
+    this.isRefreshing.set(true);
+    this.refreshSubject.next(null);
+
+    return this.refreshAccessToken().pipe(
+      tap((token) => {
+        this.refreshInProgress = false;
+        this.isRefreshing.set(false);
+        this.refreshSubject.next(token);
+      }),
+      catchError((err) => {
+        this.refreshInProgress = false;
+        this.isRefreshing.set(false);
+        this.performClientCleanup();
+        return throwError(() => err);
+      }),
+    );
+  }
+
+  refreshToken(): void {
+    this.getFreshToken().subscribe({ error: () => {} });
+  }
+
+  // ------------------------------------------------------------ token helpers
+
+  private getSecondsLeft(): number {
     const token = this.cookieService.get('aaa-token');
-    if (!token) return false;
-    
-    // Check if token is expired by decoding it
+    if (!token) return 0;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      const expired = payload.exp * 1000 < Date.now();
-      if (expired) {
-        // Token expired, clear it
-        this.clearInvalidToken();
-        return false;
-      }
-      return true;
+      return payload.exp - Math.floor(Date.now() / 1000);
     } catch {
-      // Invalid token format
-      this.clearInvalidToken();
-      return false;
+      return 0;
     }
   }
 
-  clearInvalidToken() {
+  isTokenValid(): boolean {
+    return this.getSecondsLeft() > 0;
+  }
+
+  async hasSession(): Promise<boolean> {
+    const user: any = await this.storage.getItem('aaa-user');
+    return !!user?.refresh_token;
+  }
+
+  clearInvalidToken(): void {
     this.cookieService.delete('aaa-token', '/');
     this.storage.removeItem('aaa-user');
   }
 
-  async logoutUser() {
-    if (this.isLoggingOut) {
-      return;
-    }
-    
-    this.isLoggingOut = true;    
+  // ------------------------------------------------------------------- logout
+
+  async logoutUser(): Promise<void> {
+    if (this.isLoggingOut) return;
+    this.isLoggingOut = true;
+
     const user: any = await this.storage.getItem('aaa-user');
-    const payload = {
-      refresh_token: user?.refresh_token || null
-    };
-    
+    const payload = { refresh_token: user?.refresh_token || null };
+
     this.logout(payload).subscribe({
       next: (res: any) => {
         if (res?.body?.code === 200) {
           this.notificationService.success(res?.body?.message);
-          this.performClientCleanup();
         } else {
           this.notificationService.error(res?.body?.message || 'Logout failed');
-          this.performClientCleanup();
         }
+        this.performClientCleanup();
       },
       error: (err) => {
         console.error('Logout error:', err);
         this.performClientCleanup();
-      }
+      },
     });
   }
 
-  clearSessionSilently() {
-    this.performClientCleanup();
-  }
-
-  private performClientCleanup() {
+  clearSessionSilently(): void {
     clearTimeout(this.authRefreshTimeout);
     this.storage.clear();
     this.cookieService.delete('aaa-token', '/');
     this.isLoggingOut = false;
-    this.isRefreshingToken = false;
+    this.refreshInProgress = false;
     this.isRefreshing.set(false);
-    this.redirectingToLogin = false;
-    this.router.navigate(['/login']);
   }
 
-  // Check if we should allow API calls
+  private performClientCleanup(): void {
+    if (this.redirectingToLogin) return;
+    this.redirectingToLogin = true;
+
+    this.clearSessionSilently();
+
+    this.router.navigate(['/login']).then(() => {
+      this.redirectingToLogin = false;
+    });
+  }
+
   canMakeApiCalls(): boolean {
-    if (this.isRefreshingToken) return false;
+    if (this.refreshInProgress) return false;
     if (this.isLoggingOut) return false;
     if (this.redirectingToLogin) return false;
     return true;
-  };
-
-  resetPwd(payload: any): Observable<any> {
-    let url = API_CONSTANT.resetPwd;
-    return this.apiService
-      .post(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)));
-  };
+  }
 }
