@@ -174,11 +174,13 @@
                         <td class="p-3">
                             <div class="flex items-center gap-2">
                                 @if (doc.is_generated) {
-                                <button (click)="onAddEvidance(doc)"
-                                    class="rounded-lg p-2 hover:bg-slate-100 inline-block transition-colors"
-                                    title="Add Evidence">
-                                    📎
-                                </button>
+                                    @if(doc.status != 'Draft') {
+                                        <button (click)="onAddEvidance(doc)"
+                                            class="rounded-lg p-2 hover:bg-slate-100 inline-block transition-colors"
+                                            title="Add Evidence">
+                                            📎
+                                        </button>
+                                    }
                                 <button [title]="'Edit Document'"
                                     (click)="redirecTo('/user/audit/generate-document',doc?.id)"
                                     class="rounded-lg p-2 hover:bg-slate-100 inline-block transition-colors"
