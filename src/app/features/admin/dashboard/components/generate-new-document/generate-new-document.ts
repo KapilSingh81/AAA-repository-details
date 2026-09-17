@@ -459,9 +459,8 @@ export class GenerateNewDocument implements OnInit {
     this.reportUrl.set('');
     this.certificateUrl.set('');
 
-    const shouldUpdate = !!this.documentId() && !this.isDraft();
-
-    const service = shouldUpdate
+    const shouldUpdate =  !!this.documentId() && this.isDraft(); 
+      const service = shouldUpdate
       ? this.documentService.updateDocument(payload, this.documentId())
       : this.documentService.generateDocument(payload);
 
