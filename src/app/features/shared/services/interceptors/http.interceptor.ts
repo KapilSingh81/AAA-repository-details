@@ -3,41 +3,30 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { CookieService } from 'ngx-cookie-service';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { catchError, switchMap, throwError } from 'rxjs';
-import { AuthService } from '../auth-service/auth-service';
+import { catchError, throwError } from 'rxjs';
 import { StorageService } from '../storage-service/storage.service';
-
-const attach = (req: HttpRequest<any>, token: string) =>
-  token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
 
 let isRedirecting = false;
 
 export const HttpInterceptorService: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const cookieService = inject(CookieService);
-  const authService = inject(AuthService);
   const storageService = inject(StorageService);
   const bsModalService = inject(BsModalService);
+
+  const token = cookieService.get('aaa-token');
+  if (token) {
+    req = req.clone({
+      setHeaders: {
+        Authorization: token ? `Bearer ${token}` : ""
+      }
+    });
+  }
 
   const isAuthEndpoint =
     req.url.includes('refresh-token') || req.url.includes('logout') || req.url.includes('login');
 
-  const authReq = attach(req, cookieService.get('aaa-token'));
-
-  const forceLogout = () => {
-    if (isRedirecting) return;
-    isRedirecting = true;
-    cookieService.delete('aaa-token', '/');
-    storageService.clear();
-    while (bsModalService.getModalsCount() > 0) {
-      bsModalService.hide();
-    }
-    router.navigate(['/login']).then(() => {
-      isRedirecting = false;
-    });
-  };
-
-  return next(authReq).pipe(
+  return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       const isAuthError = error.status === 401 || error.status === 403;
       const isInvalidToken = error.error?.errors?.some((e: any) =>
@@ -46,17 +35,23 @@ export const HttpInterceptorService: HttpInterceptorFn = (req, next) => {
         e.type === 'TokenExpiredError'
       );
 
-      if (isAuthEndpoint || (!isAuthError && !isInvalidToken)) {
-        return throwError(() => error);
+      if ((isAuthError || isInvalidToken) && !isAuthEndpoint) {
+        if (!isRedirecting) {
+          isRedirecting = true;
+          cookieService.delete('aaa-token', '/');
+          storageService.clear();
+
+          while (bsModalService.getModalsCount() > 0) {
+            bsModalService.hide();
+          }
+
+          router.navigate(['/login']).then(() => {
+            isRedirecting = false;
+          });
+        }
       }
 
-      return authService.getFreshToken().pipe(
-        switchMap(token => next(attach(req, token))),
-        catchError(refreshErr => {
-          forceLogout();
-          return throwError(() => refreshErr);
-        }),
-      );
+      return throwError(() => error);
     }),
   );
 };
