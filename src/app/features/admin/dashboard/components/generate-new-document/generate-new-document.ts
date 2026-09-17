@@ -49,28 +49,28 @@ export class GenerateNewDocument implements OnInit {
   documentDataByid = signal(null)
 
   documentForm = this.fb.group({
-    project_name: ['', [Validators.required, Validators.minLength(3)]],
-    client_name: ['', [Validators.required, Validators.minLength(3)]],
+    project_name: ['', [Validators.required,Validators.minLength(3)]],
+    client_name: ['', [Validators.required,Validators.minLength(3)]],
     audit_type: ['', Validators.required],
 
     metadata: this.fb.group({
-      document_id: ['', Validators.required],
-      document_version: ['', Validators.required],
-      prepared_by: ['', Validators.required],
-      reviewed_by: ['', Validators.required],
-      approved_by: ['', Validators.required],
-      released_by: ['', Validators.required],
-      release_date: ['', Validators.required],
-      report_release_date: ['', Validators.required],
-      url: ['', [Validators.required, Validators.pattern(URL_PATTERN)]],
-      public_ip: ['', [Validators.required, Validators.pattern(IP_PATTERN)]],
-      internal_ip: ['', [Validators.required, Validators.pattern(IP_PATTERN)]],
-      location: ['', Validators.required],
-      asset_criticality: ['', Validators.required],
-      asset_hash: ['', Validators.required],
-      execution_period_from: ['', Validators.required],
-      execution_period_to: ['', Validators.required],
-      methodology: ['', [Validators.required, Validators.minLength(10)]],
+      document_id: [''],
+      document_version: [''],
+      prepared_by: [''],
+      reviewed_by: [''],
+      approved_by: [''],
+      released_by: [''],
+      release_date: [''],
+      report_release_date: [''],
+      url: ['', [Validators.pattern(URL_PATTERN)]],
+      public_ip: ['', [Validators.pattern(IP_PATTERN)]],
+      internal_ip: ['', [Validators.pattern(IP_PATTERN)]],
+      location: [''],
+      asset_criticality: [''],
+      asset_hash: [''],
+      execution_period_from: [''],
+      execution_period_to: [''],
+      methodology: ['', [Validators.minLength(10)]],
     }),
 
     findings: this.fb.array([]),
@@ -189,19 +189,19 @@ export class GenerateNewDocument implements OnInit {
   createFinding(): FormGroup {
     return this.fb.group({
       finding_id: [0],
-      affected_asset: ['', Validators.required],
-      observation_title: ['', Validators.required],
-      detailed_observation: ['', [Validators.required, Validators.minLength(10)]],
+      affected_asset: [''],
+      observation_title: [''],
+      detailed_observation: ['', [Validators.minLength(10)]],
       cve_cwe: [''],
-      severity: ['', Validators.required],
-      recommendation: ['', Validators.required],
+      severity: [''],
+      recommendation: [''],
       reference: [''],
-      observation_type: ['', Validators.required],
+      observation_type: [''],
       evidence: this.fb.group({
         interim: this.fb.array([this.fb.control('')]),
         final: this.fb.array([this.fb.control('')]),
       }),
-      status: ['', Validators.required],
+      status: [''],
     });
   };
 
@@ -270,10 +270,10 @@ export class GenerateNewDocument implements OnInit {
 
   createAuditor(): FormGroup {
     return this.fb.group({
-      name: ['', Validators.required],
-      designation: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
-      certifications: ['', Validators.required],
+      name: [''],
+      designation: [''],
+      email: ['', [Validators.email]],
+      certifications: [''],
       cert_in_listed: [''],
     });
   }
@@ -292,9 +292,9 @@ export class GenerateNewDocument implements OnInit {
 
   createTool(): FormGroup {
     return this.fb.group({
-      name: ['', Validators.required],
-      version: ['', Validators.required],
-      license_type: ['', Validators.required],
+      name: [''],
+      version: [''],
+      license_type: [''],
     });
   }
 
@@ -312,10 +312,10 @@ export class GenerateNewDocument implements OnInit {
 
   createDistribution(): FormGroup {
     return this.fb.group({
-      name: ['', Validators.required],
-      organization: ['', Validators.required],
-      designation: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
+      name: [''],
+      organization: [''],
+      designation: [''],
+      email: ['', [Validators.email]],
     });
   }
 
@@ -333,14 +333,14 @@ export class GenerateNewDocument implements OnInit {
 
   createAsset(): FormGroup {
     return this.fb.group({
-      asset_description: ['', Validators.required],
-      criticality: ['', Validators.required],
-      internal_ip: ['', [Validators.required, Validators.pattern(IP_PATTERN)]],
-      url: ['', [Validators.required, Validators.pattern(URL_PATTERN)]],
-      public_ip: ['', [Validators.required, Validators.pattern(IP_PATTERN)]],
-      location: ['', Validators.required],
-      hash_value: ['', Validators.required],
-      version: ['', Validators.required],
+      asset_description: [''],
+      criticality: [''],
+      internal_ip: ['', [Validators.pattern(IP_PATTERN)]],
+      url: ['', [Validators.pattern(URL_PATTERN)]],
+      public_ip: ['', [Validators.pattern(IP_PATTERN)]],
+      location: [''],
+      hash_value: [''],
+      version: [''],
       other_details: [''],
     });
   }
@@ -359,10 +359,10 @@ export class GenerateNewDocument implements OnInit {
 
   createControl(): FormGroup {
     return this.fb.group({
-      control_id: ['', Validators.required],
-      control_name: ['', Validators.required],
-      description: ['', Validators.required],
-      status: ['Not Applicable', Validators.required],
+      control_id: [''],
+      control_name: [''],
+      description: [''],
+      status: ['Not Applicable'],
       remarks: [''],
     });
   }
@@ -471,7 +471,7 @@ export class GenerateNewDocument implements OnInit {
         this.loading.set(false);
         if (res?.body?.code == 200) {
           this.notificationService.success(res?.body?.message || 'Upload successful');
-          this.resetForm();
+          // this.resetForm();
           setTimeout(() => {
             this.router.navigateByUrl('user/audit/repository');
           }, 2000);

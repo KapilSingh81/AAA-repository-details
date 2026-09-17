@@ -42,10 +42,12 @@
                     <div class="absolute right-0 top-10 w-full bg-white rounded-lg shadow-lg py-1 z-[1000]">
                         <button (click)="onAddDocs('')"
                             class="w-full px-4 py-2 text-left !text-[12px] text-gray-700 hover:bg-gray-100 flex items-center border-b">
+                            <i class="fas fa-file-import"></i>
                             Add Existing Document
                         </button>
                         <button (click)="onGenerateDocument('')"
                             class="w-full px-4 py-2 text-left !text-[12px] text-gray-700 hover:bg-gray-100 flex items-center">
+                            <i class="fas fa-file-circle-plus"></i>
                             Generate New Document
                         </button>
                     </div>
@@ -126,6 +128,9 @@
                             Upload At
                         </th>
                         <th class="p-3 text-sm font-semibold text-slate-600">
+                            Status
+                        </th>
+                        <th class="p-3 text-sm font-semibold text-slate-600">
                             Actions
                         </th>
                     </tr>
@@ -161,8 +166,26 @@
                         <td class="p-3 text-slate-600 text-sm">
                             {{ doc.created_at | date:'dd MMM yyyy, hh:mm a' }}
                         </td>
+                        <td class="p-3 ">
+                             <span class="badge" [ngClass]="getAuditStautsClass(doc.status)">
+                                {{ doc.status | uppercase }}
+                            </span>
+                        </td>
                         <td class="p-3">
                             <div class="flex items-center gap-2">
+                                @if (doc.is_generated) {
+                                <button (click)="onAddEvidance(doc)"
+                                    class="rounded-lg p-2 hover:bg-slate-100 inline-block transition-colors"
+                                    title="Add Evidence">
+                                    📎
+                                </button>
+                                <button [title]="'Edit Document'"
+                                    (click)="redirecTo('/user/audit/generate-document',doc?.id)"
+                                    class="rounded-lg p-2 hover:bg-slate-100 inline-block transition-colors"
+                                    title="Edit Document">
+                                    ✏️
+                                </button>
+                                }
                                 @if (doc.report_download_url) {
                                 @if (isAuthorized()) {
                                 <button (click)="handleDownload(doc, 'report')"
@@ -205,13 +228,7 @@
                                 </button>
                                 }
                                 }
-                                @if (doc.is_generated) {
-                                <button [title]="'Edit Document'" (click)="redirecTo('/user/audit/generate-document',doc?.id)"
-                                    class="rounded-lg p-2 hover:bg-slate-100 inline-block transition-colors"
-                                    title="Edit Document">
-                                    ✏️
-                                </button>
-                                }
+
                             </div>
                         </td>
                     </tr>

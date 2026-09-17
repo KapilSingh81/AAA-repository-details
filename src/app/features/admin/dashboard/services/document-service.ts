@@ -66,4 +66,9 @@ export class DocumentService {
     const url = API_CONSTANT.updateDocument?.replace('{id}', id);
     return this.apiService.put(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)))
   };
+
+  uploadEvidance(payload: any, id:any): Observable<any> {
+    const url = API_CONSTANT.addEvidance?.replace('{project_id}', id);
+    return this.apiService.post(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)))
+  };
 }

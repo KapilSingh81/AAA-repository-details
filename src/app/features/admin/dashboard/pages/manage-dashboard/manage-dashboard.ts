@@ -11,6 +11,7 @@ import { NotificationService } from '../../../../shared/services/notification-se
 import { CookieService } from 'ngx-cookie-service';
 import { FormsModule } from '@angular/forms';
 import { GenerateProjectPopup } from '../../components/generate-project-popup/generate-project-popup';
+import { DocumentEvidance } from '../../components/document-evidance/document-evidance';
 
 interface Document {
   id: string;
@@ -20,7 +21,8 @@ interface Document {
   report_download_url: string;
   certificate_download_url: string;
   created_at: string;
-  is_generated: boolean
+  is_generated: boolean;
+  status : string
 }
 
 @Component({
@@ -455,4 +457,42 @@ export class ManageDashboard {
       }
     );
   };
+
+  onAddEvidance(value:any) {
+     const initialState: ModalOptions = {
+      initialState: {
+        editData: value ? value : ''
+      },
+    };
+    this.bsModalRef = this.modalService.show(
+      DocumentEvidance,
+      Object.assign(initialState, {
+        id: "confirmation",
+        class: 'modal-lg modal-dialog-centered alert-popup',
+      })
+    );
+    this.bsModalRef?.content.mapdata.subscribe(
+      (value: any) => {
+        this.searchName.set('');
+        this.selectedType.set('');
+        this.searchSubject.next('');
+        this.currentPage.set(1);
+        this.pageSize.set(10);
+        this.getDocumentList();
+      }
+    );
+  };
+
+  getAuditStautsClass(status: string): string {
+  switch (status?.toLowerCase()) {
+    case 'processing':
+      return 'bg-warning text-dark';
+    case 'draft':
+      return 'bg-secondary text-white';
+    case 'completed':
+      return 'bg-success text-white';
+    default:
+      return 'bg-light text-dark';
+  }
+}
 }

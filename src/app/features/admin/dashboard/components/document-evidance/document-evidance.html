@@ -1,0 +1,74 @@
+<div class="flex modal-header text-center">
+    <h5>
+        Add Evidence
+    </h5>
+    <div class="close-modal" (click)="close($event)">
+        <i class="fa fa-close" style="cursor: pointer;"></i>
+    </div>
+</div>
+
+<div class="modal-body">
+    <form [formGroup]="evidanceForm" (ngSubmit)="onSubmit($event, evidanceForm.value)">
+        <div class="row">
+            <!-- Finding Index -->
+            <div class="col-md-12 mb-2">
+                <label class="form-label">Finding Index <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" placeholder="Enter Finding Index"
+                    formControlName="finding_index" />
+                @if (evidanceForm.get('finding_index')?.touched && evidanceForm.get('finding_index')?.invalid) {
+                <div class="text-danger">
+                    @if (evidanceForm.get('finding_index')?.errors?.['required']) {
+                    <div>Finding index is required</div>
+                    }
+                    @if (evidanceForm.get('finding_index')?.errors?.['min']) {
+                    <div>Finding index must be 0 or greater</div>
+                    }
+                </div>
+                }
+            </div>
+
+            <!-- Stage -->
+            <div class="col-md-12 mb-2">
+                <label class="form-label">Stage <span class="text-danger">*</span></label>
+                <select class="form-select" formControlName="stage">
+                    <option value="">Select Stage</option>
+                    @for (stage of stageOptions; track stage) {
+                    <option value="{{stage}}">{{stage | titlecase}}</option>
+                    }
+                </select>
+                @if (evidanceForm.get('stage')?.touched && evidanceForm.get('stage')?.invalid) {
+                <div class="text-danger">
+                    <div>Stage is required</div>
+                </div>
+                }
+            </div>
+
+            <!-- Image -->
+            <div class="col-md-12 mb-2">
+                <label class="form-label">Image <span class="text-danger">*</span></label>
+                <input type="file" class="form-control" accept="image/*" (change)="onFileSelected($event)" />
+                @if (evidanceForm.get('image')?.touched && evidanceForm.get('image')?.invalid) {
+                <div class="text-danger">
+                    <div>Image is required</div>
+                </div>
+                }
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="button-container">
+                <button class="btn btn-success" type="submit">
+                    @if (isLoading()) {
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    Uploading...
+                    } @else {
+                    <i class="fas fa-upload me-1"></i> Upload
+                    }
+                </button>
+                <button class="btn btn-danger" type="button" (click)="close($event)">
+                    Clear
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
