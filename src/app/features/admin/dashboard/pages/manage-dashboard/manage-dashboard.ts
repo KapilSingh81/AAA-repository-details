@@ -468,7 +468,7 @@ export class ManageDashboard {
       DocumentEvidance,
       Object.assign(initialState, {
         id: "confirmation",
-        class: 'modal-lg modal-dialog-centered alert-popup',
+        class: 'modal-md modal-dialog-centered alert-popup',
       })
     );
     this.bsModalRef?.content.mapdata.subscribe(

@@ -11,7 +11,7 @@
     <form [formGroup]="evidanceForm" (ngSubmit)="onSubmit($event, evidanceForm.value)">
         <div class="row">
             <!-- Finding Index -->
-            <div class="col-md-12 mb-2">
+            <div class="col-md-6 mb-2">
                 <label class="form-label">Finding Index <span class="text-danger">*</span></label>
                 <input type="number" class="form-control" placeholder="Enter Finding Index"
                     formControlName="finding_index" />
@@ -28,7 +28,7 @@
             </div>
 
             <!-- Stage -->
-            <div class="col-md-12 mb-2">
+            <div class="col-md-6 mb-2">
                 <label class="form-label">Stage <span class="text-danger">*</span></label>
                 <select class="form-select" formControlName="stage">
                     <option value="">Select Stage</option>
@@ -44,7 +44,7 @@
             </div>
 
             <!-- Image -->
-            <div class="col-md-12 mb-2">
+            <div class="col-md-6 mb-2">
                 <label class="form-label">Image <span class="text-danger">*</span></label>
                 <input type="file" class="form-control" accept="image/*" (change)="onFileSelected($event)" />
                 @if (evidanceForm.get('image')?.touched && evidanceForm.get('image')?.invalid) {
