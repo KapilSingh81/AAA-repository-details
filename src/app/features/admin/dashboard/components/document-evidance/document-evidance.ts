@@ -71,7 +71,7 @@ export class DocumentEvidance {
             this.mapdata.emit();
           }, 2000);
         } else {
-          this.notificationService.error(res?.body?.message || 'Evidence upload failed.');
+          this.notificationService.error(res?.error?.message || 'Evidence upload failed.');
         }
       },
       error: (error: any) => {
