@@ -1,0 +1,252 @@
+<div class="flex modal-header text-center">
+    <h5>Generate New Certificate</h5>
+    <div class="close-modal" (click)="close($event)">
+        <i class="fa fa-close" style="cursor: pointer"></i>
+    </div>
+</div>
+
+<div class="modal-body">
+    <form [formGroup]="certificateForm">
+        <div class="row">
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Project Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Project Name"
+                    formControlName="project_name" />
+                @if (
+                certificateForm.get('project_name')?.touched &&
+                certificateForm.get('project_name')?.invalid
+                ) {
+                <div class="text-danger">
+                    @if (certificateForm.get('project_name')?.errors?.['required']) {
+                    <div>Project name is required</div>
+                    }
+                    @if (certificateForm.get('project_name')?.errors?.['minlength']) {
+                    <div>Minimum 3 characters required</div>
+                    }
+                </div>
+                }
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Client Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Client Name" formControlName="client_name" />
+                @if (
+                certificateForm.get('client_name')?.touched && certificateForm.get('client_name')?.invalid
+                ) {
+                <div class="text-danger">
+                    @if (certificateForm.get('client_name')?.errors?.['required']) {
+                    <div>Client name is required</div>
+                    }
+                    @if (certificateForm.get('client_name')?.errors?.['minlength']) {
+                    <div>Minimum 3 characters required</div>
+                    }
+                </div>
+                }
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Site Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Site Name" formControlName="site_name" />
+                @if (
+                certificateForm.get('site_name')?.touched && certificateForm.get('site_name')?.invalid
+                ) {
+                <div class="text-danger">
+                    @if (certificateForm.get('site_name')?.errors?.['required']) {
+                    <div>Site name is required</div>
+                    }
+                    @if (certificateForm.get('site_name')?.errors?.['minlength']) {
+                    <div>Minimum 3 characters required</div>
+                    }
+                </div>
+                }
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Site URL <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Site URL" formControlName="site_url" />
+                @if (certificateForm.get('site_url')?.touched && certificateForm.get('site_url')?.invalid) {
+                <div class="text-danger">
+                    <div>Site URL is required</div>
+                </div>
+                }
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Staging URL <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Staging URL" formControlName="staging_url" />
+                @if (
+                certificateForm.get('staging_url')?.touched && certificateForm.get('staging_url')?.invalid
+                ) {
+                <div class="text-danger">
+                    <div>Staging URL is required</div>
+                </div>
+                }
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Environment Details <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Environment Details"
+                    formControlName="environment_details" />
+                @if (
+                certificateForm.get('environment_details')?.touched &&
+                certificateForm.get('environment_details')?.invalid
+                ) {
+                <div class="text-danger">
+                    <div>Environment details are required</div>
+                </div>
+                }
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Testing Start Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" formControlName="testing_start_date" />
+                @if (
+                certificateForm.get('testing_start_date')?.touched &&
+                certificateForm.get('testing_start_date')?.invalid
+                ) {
+                <div class="text-danger">
+                    <div>Start date is required</div>
+                </div>
+                }
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Testing End Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" formControlName="testing_end_date" />
+                @if (
+                certificateForm.get('testing_end_date')?.touched &&
+                certificateForm.get('testing_end_date')?.invalid
+                ) {
+                <div class="text-danger">
+                    <div>End date is required</div>
+                </div>
+                }
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Issue Date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" formControlName="issue_date" />
+                @if (
+                certificateForm.get('issue_date')?.touched && certificateForm.get('issue_date')?.invalid
+                ) {
+                <div class="text-danger">
+                    <div>Issue date is required</div>
+                </div>
+                }
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <label class="form-label"> Validity (Years) <span class="text-danger">*</span> </label>
+                <input type="text" class="form-control" placeholder="Enter validity in years"
+                    formControlName="validity_years" />
+                @if (
+                certificateForm.get('validity_years')?.touched &&
+                certificateForm.get('validity_years')?.invalid
+                ) {
+                <div class="text-danger">
+                    @if (certificateForm.get('validity_years')?.errors?.['required']) {
+                    <div>Validity is required</div>
+                    }
+                    @if (certificateForm.get('validity_years')?.errors?.['min']) {
+                    <div>Validity must be at least 1 year</div>
+                    }
+                </div>
+                }
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Hash Value <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Hash Value" formControlName="hash_value" />
+                @if (
+                certificateForm.get('hash_value')?.touched && certificateForm.get('hash_value')?.invalid
+                ) {
+                <div class="text-danger">
+                    <div>Hash value is required</div>
+                </div>
+                }
+            </div>
+
+            <div class="col-md-4 mb-2">
+                <label class="form-label">Audited By <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Auditor Name" formControlName="audited_by" />
+                @if (
+                certificateForm.get('audited_by')?.touched && certificateForm.get('audited_by')?.invalid
+                ) {
+                <div class="text-danger">
+                    <div>Auditor name is required</div>
+                </div>
+                }
+            </div>
+
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Vulnerabilities (Comma separated) <span class="text-danger">*</span></label>
+                <textarea class="form-control" rows="2" placeholder="Enter vulnerabilities separated by comma"
+                    formControlName="vulnerabilities"></textarea>
+                @if (
+                certificateForm.get('vulnerabilities')?.touched &&
+                certificateForm.get('vulnerabilities')?.invalid
+                ) {
+                <div class="text-danger">
+                    <div>Vulnerabilities are required</div>
+                </div>
+                }
+            </div>
+
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Extra Recommendation <span class="text-danger">*</span></label>
+                <textarea class="form-control" rows="2" placeholder="Enter extra recommendations"
+                    formControlName="extra_recommendation"></textarea>
+                @if (
+                certificateForm.get('extra_recommendation')?.touched &&
+                certificateForm.get('extra_recommendation')?.invalid
+                ) {
+                <div class="text-danger">
+                    <div>Extra recommendation is required</div>
+                </div>
+                }
+            </div>
+
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Signatory Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Signatory Name"
+                    formControlName="signatory_name" />
+                @if (
+                certificateForm.get('signatory_name')?.touched &&
+                certificateForm.get('signatory_name')?.invalid
+                ) {
+                <div class="text-danger">
+                    <div>Signatory name is required</div>
+                </div>
+                }
+            </div>
+
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Signatory Designation <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" placeholder="Enter Signatory Designation"
+                    formControlName="signatory_designation" />
+                @if (
+                certificateForm.get('signatory_designation')?.touched &&
+                certificateForm.get('signatory_designation')?.invalid
+                ) {
+                <div class="text-danger">
+                    <div>Signatory designation is required</div>
+                </div>
+                }
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="button-container">
+                <button class="btn btn-success" type="submit" (click)="onSubmit($event)">
+                    @if (isLoading()) {
+                    <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                    Generating...
+                    } @else {
+                    <i class="fas fa-upload me-1"></i> Generate
+                    }
+                </button>
+                <button class="btn btn-danger" type="button" (click)="close($event)">Clear</button>
+            </div>
+        </div>
+    </form>
+</div>

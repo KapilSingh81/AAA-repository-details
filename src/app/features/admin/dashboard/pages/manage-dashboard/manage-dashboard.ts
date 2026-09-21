@@ -12,6 +12,7 @@ import { CookieService } from 'ngx-cookie-service';
 import { FormsModule } from '@angular/forms';
 import { GenerateProjectPopup } from '../../components/generate-project-popup/generate-project-popup';
 import { DocumentEvidance } from '../../components/document-evidance/document-evidance';
+import { GenerateCertificate } from '../../components/generate-certificate/generate-certificate';
 
 interface Document {
   id: string;
@@ -22,7 +23,7 @@ interface Document {
   certificate_download_url: string;
   created_at: string;
   is_generated: boolean;
-  status : string
+  status: string
 }
 
 @Component({
@@ -458,8 +459,8 @@ export class ManageDashboard {
     );
   };
 
-  onAddEvidance(value:any) {
-     const initialState: ModalOptions = {
+  onAddEvidance(value: any) {
+    const initialState: ModalOptions = {
       initialState: {
         editData: value ? value : ''
       },
@@ -483,16 +484,41 @@ export class ManageDashboard {
     );
   };
 
+  onGenerateCertificate(value: any) {
+    const initialState: ModalOptions = {
+      initialState: {
+        editData: value ? value : ''
+      },
+    };
+    this.bsModalRef = this.modalService.show(
+      GenerateCertificate,
+      Object.assign(initialState, {
+        id: "confirmation",
+        class: 'modal-lg modal-dialog-centered alert-popup',
+      })
+    );
+    this.bsModalRef?.content.mapdata.subscribe(
+      (value: any) => {
+        this.searchName.set('');
+        this.selectedType.set('');
+        this.searchSubject.next('');
+        this.currentPage.set(1);
+        this.pageSize.set(10);
+        this.getDocumentList();
+      }
+    );
+  };
+
   getAuditStautsClass(status: string): string {
-  switch (status?.toLowerCase()) {
-    case 'processing':
-      return 'bg-warning text-dark';
-    case 'draft':
-      return 'bg-secondary text-white';
-    case 'completed':
-      return 'bg-success text-white';
-    default:
-      return 'bg-light text-dark';
+    switch (status?.toLowerCase()) {
+      case 'processing':
+        return 'bg-warning text-dark';
+      case 'draft':
+        return 'bg-secondary text-white';
+      case 'completed':
+        return 'bg-success text-white';
+      default:
+        return 'bg-light text-dark';
+    }
   }
-}
 }

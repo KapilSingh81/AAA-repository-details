@@ -17,6 +17,8 @@ export const API_CONSTANT = {
   statusOptions: 'documents/status-options',
   documentById : 'documents/generate/{id}',
   updateDocument : 'documents/draft/{id}',
-  addEvidance : 'documents/{project_id}/evidence'
+  addEvidance : 'documents/{project_id}/evidence',
+
+  generateCertificate: 'certificates/generate',
 
 }

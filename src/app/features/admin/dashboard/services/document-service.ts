@@ -71,4 +71,9 @@ export class DocumentService {
     const url = API_CONSTANT.addEvidance?.replace('{project_id}', id);
     return this.apiService.post(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)))
   };
+
+   generateCertificate(payload: any): Observable<any> {
+    const url = API_CONSTANT.generateCertificate;
+    return this.apiService.post(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)));
+  };
 }
