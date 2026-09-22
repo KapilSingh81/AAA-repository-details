@@ -25,6 +25,9 @@ export class DocumentService {
     if (data?.audit_type) {
       params.audit_type = data.audit_type;
     };
+    if (data?.status) {
+      params.status = data.status;
+    };
     return this.apiService
       .get(API_CONSTANT.dashboardList, { params })
       .pipe(catchError((error: HttpErrorResponse) => of(error)));
