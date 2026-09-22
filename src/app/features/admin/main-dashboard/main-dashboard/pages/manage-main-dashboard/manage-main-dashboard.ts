@@ -22,7 +22,7 @@ const TYPE_COLORS: Record<string, string> = {
   imports: [CommonModule],
   templateUrl: './manage-main-dashboard.html',
   styleUrls: ['./manage-main-dashboard.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  // changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ManageMainDashboard implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('trendChart') trendChartRef!: ElementRef<HTMLCanvasElement>;
