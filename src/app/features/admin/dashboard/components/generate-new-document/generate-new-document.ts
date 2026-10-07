@@ -49,19 +49,20 @@ export class GenerateNewDocument implements OnInit {
   documentDataByid = signal(null)
 
   documentForm = this.fb.group({
-    project_name: ['', [Validators.required,Validators.minLength(3)]],
-    client_name: ['', [Validators.required,Validators.minLength(3)]],
+    project_name: ['', [Validators.required, Validators.minLength(3)]],
+    client_name: ['', [Validators.required, Validators.minLength(3)]],
     audit_type: ['', Validators.required],
 
     metadata: this.fb.group({
       document_id: [''],
+      audit_id: [''],
       document_version: [''],
       prepared_by: [''],
       reviewed_by: [''],
       approved_by: [''],
       released_by: [''],
       release_date: [''],
-      report_release_date: [''],
+      // report_release_date: [''],
       url: ['', [Validators.pattern(URL_PATTERN)]],
       public_ip: ['', [Validators.pattern(IP_PATTERN)]],
       internal_ip: ['', [Validators.pattern(IP_PATTERN)]],
@@ -70,9 +71,16 @@ export class GenerateNewDocument implements OnInit {
       asset_hash: [''],
       execution_period_from: [''],
       execution_period_to: [''],
+      receipt_date: [''],
+      report_preparation_date: [''],
       methodology: ['', [Validators.minLength(10)]],
     }),
 
+    certificate: this.fb.group({
+      site_url: ['', [Validators.pattern(URL_PATTERN)]],
+      environment_details: [''],
+      extra_recommendations: [''],
+    }),
     findings: this.fb.array([]),
     auditors: this.fb.array([]),
     tools: this.fb.array([]),
@@ -139,6 +147,10 @@ export class GenerateNewDocument implements OnInit {
   get controls(): FormArray {
     return this.documentForm.get('controls') as FormArray;
   };
+
+  get certificate(): FormGroup {
+    return this.documentForm.get('certificate') as FormGroup;
+  }
 
   private buildExecutionPeriod(from: any, to: any): any {
     if (!from && !to) return '';
@@ -426,21 +438,32 @@ export class GenerateNewDocument implements OnInit {
         formValue.metadata.execution_period_to,
       ),
     };
-    delete (metadata as any).execution_period_from;
-    delete (metadata as any).execution_period_to;
+    delete metadata.execution_period_from;
+    delete metadata.execution_period_to;
 
     return {
       project_name: formValue.project_name,
       client_name: formValue.client_name,
       audit_type: formValue.audit_type,
-      metadata: formValue.metadata,
+      metadata: metadata,
       findings: formValue.findings,
       auditors: formValue.auditors,
       tools: formValue.tools,
       distribution: formValue.distribution,
       assets: formValue.assets,
       controls: formValue.controls,
-      activity_summary : '',
+      activity_summary: '',
+      certificate: {
+        site_url: formValue.certificate.site_url,
+        environment_details: formValue.certificate.environment_details,
+
+        extra_recommendations: formValue.certificate.extra_recommendations
+          ? formValue.certificate.extra_recommendations
+            .split(',')
+            .map((item: string) => item.trim())
+            .filter((item: string) => item.length > 0)
+          : [],
+      },
       document_generate: !this.isDraft(),
     };
   }
@@ -459,10 +482,12 @@ export class GenerateNewDocument implements OnInit {
     this.reportUrl.set('');
     this.certificateUrl.set('');
 
-    const shouldUpdate =  !!this.documentId() && this.isDraft(); 
-      const service = shouldUpdate
-      ? this.documentService.updateDocument(payload, this.documentId())
-      : this.documentService.generateDocument(payload);
+    // const shouldUpdate = !!this.documentId() && this.isDraft();
+    // const service = shouldUpdate
+    //   ? this.documentService.updateDocument(payload, this.documentId())
+    //   : this.documentService.generateDocument(payload);
+    
+    const service = this.documentService.updateDocument(payload, this.documentId());
 
     service.subscribe({
       next: (res: any) => {
@@ -498,7 +523,7 @@ export class GenerateNewDocument implements OnInit {
         approved_by: '',
         released_by: '',
         release_date: '',
-        report_release_date: '',
+        // report_release_date: '',
         url: '',
         public_ip: '',
         internal_ip: '',
@@ -508,6 +533,11 @@ export class GenerateNewDocument implements OnInit {
         execution_period_from: '',
         execution_period_to: '',
         methodology: '',
+      },
+      certificate: {
+        site_url: '',
+        environment_details: '',
+        extra_recommendations: '',
       },
       summary: {
         total_observations: 0,
@@ -583,13 +613,14 @@ export class GenerateNewDocument implements OnInit {
       audit_type: data.audit_type,
       metadata: {
         document_id: data.metadata?.document_id,
+        audit_id: data.metadata?.audit_id,
         document_version: data.metadata?.document_version,
         prepared_by: data.metadata?.prepared_by,
         reviewed_by: data.metadata?.reviewed_by,
         approved_by: data.metadata?.approved_by,
         released_by: data.metadata?.released_by,
         release_date: data.metadata?.release_date,
-        report_release_date: data.metadata?.report_release_date,
+        // report_release_date: data.metadata?.report_release_date,
         url: data.metadata?.url,
         public_ip: data.metadata?.public_ip,
         internal_ip: data.metadata?.internal_ip,
@@ -598,7 +629,18 @@ export class GenerateNewDocument implements OnInit {
         asset_hash: data.metadata?.asset_hash,
         execution_period_from: execPeriod.from,
         execution_period_to: execPeriod.to,
+        receipt_date: data.metadata?.receipt_date,
+        report_preparation_date: data.metadata?.report_preparation_date,
         methodology: data.metadata?.methodology,
+      },
+      certificate: {
+        site_url: data.certificate?.site_url ?? '',
+        environment_details: data.certificate?.environment_details ?? '',
+        extra_recommendations: Array.isArray(
+          data.certificate?.extra_recommendations
+        )
+          ? data.certificate.extra_recommendations.join(', ')
+          : data.certificate?.extra_recommendations ?? '',
       },
       summary: {
         total_observations: data.summary?.total_observations ?? 0,

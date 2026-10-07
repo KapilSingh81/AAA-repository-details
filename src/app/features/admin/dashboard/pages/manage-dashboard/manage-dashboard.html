@@ -426,6 +426,30 @@
         </button>
         }
         }
+
+        @if (activeDoc.status === 'Processing') {
+  <button
+    (click)="onFinalizeDocument(activeDoc)"
+    class="!w-full !flex !items-center !gap-2 !px-3 !py-2 !text-sm !text-slate-600 hover:!text-emerald-600 hover:!bg-emerald-50 !transition-colors !text-left"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke-width="1.5"
+      stroke="currentColor"
+      class="!w-4 !h-4 !shrink-0"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M4.5 12.75l6 6 9-13.5"
+      />
+    </svg>
+
+    <span>Finalize</span>
+  </button>
+}
     </div>
     }
 </div>

@@ -690,4 +690,32 @@ export class ManageDashboard {
       this.closeActionMenu();
     }
   }
+
+  onFinalizeDocument(doc: any): void {
+  this.closeActionMenu();
+
+  const payload = {};
+
+  this.documentService.finlizeDocument(payload, doc.id).subscribe({
+    next: (res: any) => {
+      if (res?.body?.code === 200) {
+        this.notification.success(
+          res?.body?.message || 'Document finalized successfully.'
+        );
+
+        this.getDocumentList();
+      } else {
+        this.notification.error(
+          res?.error?.message || 'Failed to finalize document.'
+        );
+      }
+    },
+
+    error: (error: any) => {
+      this.notification.error(
+        error?.error?.message || 'Failed to finalize document.'
+      );
+    },
+  });
+}
 }

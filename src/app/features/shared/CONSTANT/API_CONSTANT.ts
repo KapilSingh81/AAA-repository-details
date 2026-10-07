@@ -20,5 +20,7 @@ export const API_CONSTANT = {
   addEvidance : 'documents/{project_id}/evidence',
 
   generateCertificate: 'certificates/generate',
+  finalizeDocument: 'documents/{project_id}/finalize',
+
 
 }

@@ -79,4 +79,10 @@ export class DocumentService {
     const url = API_CONSTANT.generateCertificate;
     return this.apiService.post(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)));
   };
+
+   finlizeDocument(payload: any,projectId:any): Observable<any> {
+    const url = API_CONSTANT.finalizeDocument.replace('{project_id}',projectId);
+    return this.apiService.post(url, payload);
+  }
+
 }
