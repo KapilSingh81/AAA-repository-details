@@ -36,7 +36,7 @@ export class AddDocment {
     client_name: ['', [Validators.required, Validators.minLength(3)]],
     type: ['', Validators.required],
     document: ['', Validators.required],
-    certificate: ['', Validators.required]
+    certificate: ['']
   });
 
   ngOnInit() {
@@ -125,12 +125,14 @@ export class AddDocment {
     if (fileType === 'document') {
       this.selectedDocument.set(null);
       this.documentForm.patchValue({ document: '' });
+      this.documentForm.get('document')?.markAsTouched();
+      this.documentForm.get('document')?.setErrors({ required: true });
     } else {
       this.selectedCertificate.set(null);
       this.documentForm.patchValue({ certificate: '' });
+      // this.documentForm.get('certificate')?.markAsTouched();
+      // this.documentForm.get('certificate')?.setErrors({ required: true });
     }
-    this.documentForm.get(fileType)?.markAsTouched();
-    this.documentForm.get(fileType)?.setErrors({ required: true });
   }
 
   formatFileSize(size: number): string {
@@ -148,9 +150,9 @@ export class AddDocment {
     if (!this.selectedDocument()) {
       this.documentForm.get('document')?.setErrors({ required: true });
     }
-    if (!this.selectedCertificate()) {
-      this.documentForm.get('certificate')?.setErrors({ required: true });
-    }
+    // if (!this.selectedCertificate()) {
+    //   this.documentForm.get('certificate')?.setErrors({ required: true });
+    // }
 
     if (this.documentForm.invalid) {
       return;
