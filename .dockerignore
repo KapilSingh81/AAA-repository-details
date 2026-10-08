@@ -1,5 +1,4 @@
-/node_modules
-dist/
-.angular/
+node_modules
+dist
+.angular
 .git
-package-lock.json
