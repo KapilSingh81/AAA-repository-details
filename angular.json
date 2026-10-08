@@ -66,6 +66,7 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
+            "prebundle": false,
             "allowedHosts": [
               "dms.aaatechnologies.co.in"
             ]
