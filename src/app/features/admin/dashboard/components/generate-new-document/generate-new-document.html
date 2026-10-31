@@ -55,8 +55,8 @@
             formControlName="audit_type">
             <option value="">All Types</option>
             @for (type of documentTypeList; track type) {
-            <option [value]="type">
-              {{ type }}
+            <option [value]="type?.value">
+              {{ type?.label }}
             </option>
             }
           </select>

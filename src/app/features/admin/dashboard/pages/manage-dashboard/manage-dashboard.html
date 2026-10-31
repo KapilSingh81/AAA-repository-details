@@ -105,7 +105,7 @@
                         [value]="selectedType()" (change)="onTypeChange($event)">
                         <option value="">All Types</option>
                         @for (type of documentTypeList; track type) {
-                        <option [value]="type">{{ type }}</option>
+                        <option [value]="type?.value">{{ type?.label }}</option>
                         }
                     </select>
 

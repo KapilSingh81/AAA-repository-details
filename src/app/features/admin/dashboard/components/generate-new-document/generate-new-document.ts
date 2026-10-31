@@ -621,7 +621,7 @@ export class GenerateNewDocument implements OnInit {
 
   getDocumentTypeList() {
     this.commonService.documentTypeList().subscribe((res: any) => {
-      this.documentTypeList = res?.body?.types || [];
+      this.documentTypeList = res?.body?.options || [];
       this.cdr.detectChanges();
     });
   };
