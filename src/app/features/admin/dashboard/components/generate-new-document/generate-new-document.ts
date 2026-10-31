@@ -13,6 +13,9 @@ import { DocumentService } from '../../services/document-service';
 import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonService } from '../../../../shared/services/common-services/common-service';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
 
 const IP_PATTERN = /^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$/;
 const URL_PATTERN = /^(https?:\/\/)([\w-]+\.)+[\w-]{2,}(:\d+)?(\/[^\s]*)?$/i;
@@ -33,6 +36,7 @@ export class GenerateNewDocument implements OnInit {
   private commonService = inject(CommonService);
   private cdr = inject(ChangeDetectorRef);
   private route = inject(ActivatedRoute)
+  private http = inject(HttpClient);
 
   loading = signal(false);
   errorMessage = signal('');
@@ -46,7 +50,12 @@ export class GenerateNewDocument implements OnInit {
   label = signal<string>('Generate');
   documentTypeList: any;
   documentId = signal<any>(0);
-  documentDataByid = signal(null)
+  documentDataByid = signal(null);
+  evidenceStageOptions: ('interim' | 'final')[] = ['interim', 'final'];
+  uploadingFinding = signal<number | null>(null);
+  IMAGE_URL_PATTERN = /^https?:\/\/\S+\.(png|jpe?g|gif|webp|bmp)(\?\S*)?$/i;
+  imageBlobs = signal<Record<string, string>>({});
+  private loadingUrls = new Set<string>();
 
   documentForm = this.fb.group({
     project_name: ['', [Validators.required, Validators.minLength(3)]],
@@ -63,7 +72,7 @@ export class GenerateNewDocument implements OnInit {
       released_by: [''],
       release_date: [''],
       // report_release_date: [''],
-      url: ['', [Validators.pattern(URL_PATTERN)]],
+      url: [''],
       public_ip: ['', [Validators.pattern(IP_PATTERN)]],
       internal_ip: ['', [Validators.pattern(IP_PATTERN)]],
       location: [''],
@@ -74,19 +83,24 @@ export class GenerateNewDocument implements OnInit {
       receipt_date: [''],
       report_preparation_date: [''],
       methodology: ['', [Validators.minLength(10)]],
+      application_name: [''],
+      application_version: ['']
     }),
 
     certificate: this.fb.group({
       site_url: ['', [Validators.pattern(URL_PATTERN)]],
       environment_details: [''],
       extra_recommendations: [''],
+      lines_of_code: [''],
+      hash_algorithem: [''],
+      app_permission: ['']
     }),
     findings: this.fb.array([]),
     auditors: this.fb.array([]),
     tools: this.fb.array([]),
     distribution: this.fb.array([]),
     assets: this.fb.array([]),
-    controls: this.fb.array([]),
+    // controls: this.fb.array([]),
 
     summary: this.fb.group({
       total_observations: [0],
@@ -110,7 +124,7 @@ export class GenerateNewDocument implements OnInit {
       this.addTool();
       this.addDistribution();
       this.addAsset();
-      this.addControl();
+      // this.addControl();
     }
 
     this.loadStatusOptions();
@@ -144,9 +158,9 @@ export class GenerateNewDocument implements OnInit {
     return this.documentForm.get('assets') as FormArray;
   }
 
-  get controls(): FormArray {
-    return this.documentForm.get('controls') as FormArray;
-  };
+  // get controls(): FormArray {
+  //   return this.documentForm.get('controls') as FormArray;
+  // };
 
   get certificate(): FormGroup {
     return this.documentForm.get('certificate') as FormGroup;
@@ -213,6 +227,13 @@ export class GenerateNewDocument implements OnInit {
         interim: this.fb.array([this.fb.control('')]),
         final: this.fb.array([this.fb.control('')]),
       }),
+      // FIX: image URLs from API are kept here (UI only), merged back into evidence in getPayload()
+      evidence_images: this.fb.group({
+        interim: [[] as string[]],
+        final: [[] as string[]],
+      }),
+      evidence_stage: ['interim'],   // UI only, payload mein nahi jayega
+      evidence_items: [[]],          // UI only, payload mein nahi jayega
       status: [''],
     });
   };
@@ -369,27 +390,27 @@ export class GenerateNewDocument implements OnInit {
     this.assets.removeAt(index);
   }
 
-  createControl(): FormGroup {
-    return this.fb.group({
-      control_id: [''],
-      control_name: [''],
-      description: [''],
-      status: ['Not Applicable'],
-      remarks: [''],
-    });
-  }
+  // createControl(): FormGroup {
+  //   return this.fb.group({
+  //     control_id: [''],
+  //     control_name: [''],
+  //     description: [''],
+  //     status: ['Not Applicable'],
+  //     remarks: [''],
+  //   });
+  // }
 
-  addControl(): void {
-    this.controls.push(this.createControl());
-  }
+  // addControl(): void {
+  //   this.controls.push(this.createControl());
+  // }
 
-  removeControl(index: number): void {
-    if (this.controls.length <= 1) {
-      this.controls.at(0)?.reset();
-      return;
-    }
-    this.controls.removeAt(index);
-  }
+  // removeControl(index: number): void {
+  //   if (this.controls.length <= 1) {
+  //     this.controls.at(0)?.reset();
+  //     return;
+  //   }
+  //   this.controls.removeAt(index);
+  // }
 
   updateSummary(): void {
     const findings = this.findings.getRawValue();
@@ -446,17 +467,32 @@ export class GenerateNewDocument implements OnInit {
       client_name: formValue.client_name,
       audit_type: formValue.audit_type,
       metadata: metadata,
-      findings: formValue.findings,
+      // UI-only fields (evidence_stage, evidence_items, evidence_images) removed from payload;
+      // image URLs are merged back into evidence.interim / evidence.final
+      findings: formValue.findings.map((f: any) => {
+        const { evidence_stage, evidence_items, evidence_images, evidence, ...rest } = f;
+        const clean = (a: string[] | null | undefined) =>
+          (a ?? []).filter((v) => typeof v === 'string' && v.trim().length > 0);
+        return {
+          ...rest,
+          evidence: {
+            interim: [...clean(evidence?.interim), ...(evidence_images?.interim ?? [])],
+            final: [...clean(evidence?.final), ...(evidence_images?.final ?? [])],
+          },
+        };
+      }),
       auditors: formValue.auditors,
       tools: formValue.tools,
       distribution: formValue.distribution,
       assets: formValue.assets,
-      controls: formValue.controls,
+      // controls: formValue.controls,
       activity_summary: '',
       certificate: {
         site_url: formValue.certificate.site_url,
         environment_details: formValue.certificate.environment_details,
-
+        lines_of_code: formValue.certificate.lines_of_code,
+        hash_algorithem: formValue.certificate.hash_algorithem,
+        app_permission: formValue.certificate.app_permission,
         extra_recommendations: formValue.certificate.extra_recommendations
           ? formValue.certificate.extra_recommendations
             .split(',')
@@ -486,12 +522,11 @@ export class GenerateNewDocument implements OnInit {
     // const service = shouldUpdate
     //   ? this.documentService.updateDocument(payload, this.documentId())
     //   : this.documentService.generateDocument(payload);
-    
+
     const service = this.documentService.updateDocument(payload, this.documentId());
 
     service.subscribe({
       next: (res: any) => {
-        console.log(res);
         this.loading.set(false);
         if (res?.body?.code == 200) {
           this.notificationService.success(res?.body?.message || 'Upload successful');
@@ -533,11 +568,16 @@ export class GenerateNewDocument implements OnInit {
         execution_period_from: '',
         execution_period_to: '',
         methodology: '',
+        application_name: '',
+        application_version: ''
       },
       certificate: {
         site_url: '',
         environment_details: '',
         extra_recommendations: '',
+        lines_of_code: '',
+        hash_algorithem: '',
+        app_permission: ''
       },
       summary: {
         total_observations: 0,
@@ -553,14 +593,14 @@ export class GenerateNewDocument implements OnInit {
     this.clearArray(this.tools);
     this.clearArray(this.distribution);
     this.clearArray(this.assets);
-    this.clearArray(this.controls);
+    // this.clearArray(this.controls);
 
     this.addFinding();
     this.addAuditor();
     this.addTool();
     this.addDistribution();
     this.addAsset();
-    this.addControl();
+    // this.addControl();
 
     this.loading.set(false);
     this.errorMessage.set('');
@@ -632,6 +672,9 @@ export class GenerateNewDocument implements OnInit {
         receipt_date: data.metadata?.receipt_date,
         report_preparation_date: data.metadata?.report_preparation_date,
         methodology: data.metadata?.methodology,
+        // FIX: these were not patched before
+        application_name: data.metadata?.application_name ?? '',
+        application_version: data.metadata?.application_version ?? '',
       },
       certificate: {
         site_url: data.certificate?.site_url ?? '',
@@ -641,6 +684,9 @@ export class GenerateNewDocument implements OnInit {
         )
           ? data.certificate.extra_recommendations.join(', ')
           : data.certificate?.extra_recommendations ?? '',
+        lines_of_code: data.certificate?.lines_of_code ?? '',
+        hash_algorithem: data.certificate?.hash_algorithem ?? '',
+        app_permission:  data.certificate?.app_permission ?? '',
       },
       summary: {
         total_observations: data.summary?.total_observations ?? 0,
@@ -653,12 +699,14 @@ export class GenerateNewDocument implements OnInit {
 
     this.isDraft.set(String(data.status ?? '').toLowerCase() === 'draft');
 
-    this.patchArray(this.findings, data.findings, () => this.createFinding());
+    // this.patchArray(this.findings, data.findings, () => this.createFinding());
+    this.patchFindings(data.findings);
     this.patchArray(this.auditors, data.auditors, () => this.createAuditor());
     this.patchArray(this.tools, data.tools, () => this.createTool());
     this.patchArray(this.distribution, data.distribution, () => this.createDistribution());
     this.patchArray(this.assets, data.assets, () => this.createAsset());
-    this.patchArray(this.controls, data.controls, () => this.createControl());
+
+    // this.patchArray(this.controls, data.controls, () => this.createControl());
 
     this.updateSummary();
   }
@@ -674,6 +722,208 @@ export class GenerateNewDocument implements OnInit {
       const group = factory();
       group.patchValue(item ?? {});
       formArray.push(group);
+    });
+  };
+
+  // ---------------- EVIDENCE UPLOAD ----------------
+
+  onEvidenceFiles(event: Event, finding: AbstractControl): void {
+    const input = event.target as HTMLInputElement;
+    const stage = finding.get('evidence_stage')?.value;
+    if (!stage) {
+      this.notificationService.error('Please select a stage first.');
+      input.value = '';
+      return;
+    }
+    const ctrl = finding.get('evidence_items')!;
+    const added = Array.from(input.files ?? []).map((file) => ({
+      stage,
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    ctrl.setValue([...(ctrl.value ?? []), ...added]);
+    input.value = '';
+  }
+
+  getEvidenceItems(finding: AbstractControl) {
+    return finding.get('evidence_items')?.value ?? [];
+  }
+
+  removeEvidenceItem(finding: AbstractControl, index: number): void {
+    const ctrl = finding.get('evidence_items')!;
+    const items = [...ctrl.value];
+    URL.revokeObjectURL(items[index].preview);
+    items.splice(index, 1);
+    ctrl.setValue(items);
+  }
+
+  private uploadEvidence(docId: any) {
+    const calls: any[] = [];
+    this.findings.getRawValue().forEach((f: any, idx: number) => {
+      (f.evidence_items ?? []).forEach((item: any) => {
+        const fd = new FormData();
+        fd.append('finding_index', String(idx));
+        fd.append('stage', item.stage);
+        fd.append('image', item.file);
+        calls.push(this.documentService.uploadEvidance(fd, docId));
+      });
+    });
+    return calls.length ? forkJoin(calls) : of([]);
+  };
+
+  uploadFindingEvidence(finding: AbstractControl, index: number): void {
+    const docId = this.documentId();
+    const items = this.getEvidenceItems(finding);
+    if (!items.length) {
+      this.notificationService.error('Please select at least one image.');
+      return;
+    }
+
+    this.uploadingFinding.set(index);
+    const byStage = new Map<string, any[]>();
+    items.forEach((item: any) => {
+      byStage.set(item.stage, [...(byStage.get(item.stage) ?? []), item]);
+    });
+
+    const calls = Array.from(byStage.entries()).map(([stage, group]) => {
+      const fd = new FormData();
+      fd.append('finding_index', String(index));
+      fd.append('stage', stage);
+      group.forEach((g: any) => fd.append('image', g.file));
+
+      return this.documentService.uploadEvidance(fd, docId).pipe(
+        map((res: any) => ({
+          group,
+          ok: res?.body?.code == 200,
+          msg: res?.body?.message || res?.error?.message || '',
+        })),
+        catchError((error: any) =>
+          of({ group, ok: false, msg: error?.error?.message || 'Evidence upload failed.' }),
+        ),
+      );
+    });
+
+    forkJoin(calls).subscribe((results: any[]) => {
+      this.uploadingFinding.set(null);
+
+      const success = results.filter((r) => r.ok);
+      const failed = results.filter((r) => !r.ok);
+
+      success.forEach((r) => r.group.forEach((i: any) => URL.revokeObjectURL(i.preview)));
+      finding.get('evidence_items')?.setValue(failed.flatMap((r) => r.group));
+
+      if (failed.length === 0) {
+        this.notificationService.success(success[0]?.msg || 'Evidence uploaded successfully');
+      } else {
+        this.notificationService.error(failed[0].msg || 'Evidence upload failed.');
+      }
+
+      // FIX: show newly uploaded images (refreshes only image lists, keeps unsaved form edits)
+      if (success.length) {
+        this.refreshEvidenceImages();
+      }
+    });
+  };
+
+  // FIX: split API evidence into text rows (inputs) and image URLs (grid)
+  private patchFindings(items: any[] | undefined): void {
+    this.findings.clear();
+    const list = Array.isArray(items) && items.length ? items : [{}];
+
+    list.forEach((item) => {
+      const group = this.createFinding();
+      const { evidence, ...rest } = item ?? {};
+      group.patchValue(rest);
+
+      this.evidenceStageOptions.forEach((stage) => {
+        const all: string[] = Array.isArray(evidence?.[stage]) ? evidence[stage] : [];
+        const texts = all.filter((v) => !this.isImageUrl(v));
+        const imgs = all.filter((v) => this.isImageUrl(v)).map((v) => v.trim());
+
+        const arr = this.getEvidenceArray(group, stage);
+        arr.clear();
+        (texts.length ? texts : ['']).forEach((v) => arr.push(this.fb.control(v)));
+        group.get(`evidence_images.${stage}`)?.setValue(imgs);
+      });
+
+      this.findings.push(group);
+    });
+
+    this.updateFindingIds();
+    this.preloadEvidenceImages();
+  };
+
+  private refreshEvidenceImages(): void {
+    this.documentService.documentById(this.documentId()).subscribe({
+      next: (res: any) => {
+        const data = res?.body;
+        (data?.findings ?? []).forEach((f: any, idx: number) => {
+          const group = this.findings.at(idx);
+          if (!group) return;
+          this.evidenceStageOptions.forEach((stage) => {
+            const all: string[] = Array.isArray(f?.evidence?.[stage]) ? f.evidence[stage] : [];
+            group
+              .get(`evidence_images.${stage}`)
+              ?.setValue(all.filter((v) => this.isImageUrl(v)).map((v) => v.trim()));
+          });
+        });
+        this.preloadEvidenceImages();
+      },
+    });
+  }
+
+  private isImageUrl(v: any): boolean {
+    return typeof v === 'string' && this.IMAGE_URL_PATTERN.test(v.trim());
+  }
+
+  getEvidenceArray(finding: AbstractControl, stage: 'interim' | 'final'): FormArray {
+    return finding.get(`evidence.${stage}`) as FormArray;
+  }
+
+  addEvidenceRow(finding: AbstractControl, stage: 'interim' | 'final'): void {
+    this.getEvidenceArray(finding, stage).push(this.fb.control(''));
+  }
+
+  removeEvidenceRow(finding: AbstractControl, stage: 'interim' | 'final', index: number): void {
+    const arr = this.getEvidenceArray(finding, stage);
+    if (arr.length <= 1) {
+      arr.at(0)?.reset('');
+      return;
+    }
+    arr.removeAt(index);
+  }
+
+  getEvidenceImages(finding: AbstractControl, stage: 'interim' | 'final'): string[] {
+    return (finding.get(`evidence_images.${stage}`)?.value as string[]) ?? [];
+  }
+
+  removeEvidenceImage(finding: AbstractControl, stage: 'interim' | 'final', url: string): void {
+    const ctrl = finding.get(`evidence_images.${stage}`);
+    if (!ctrl) return;
+    ctrl.setValue((ctrl.value ?? []).filter((u: string) => u !== url));
+  }
+
+  imageSrc(url: string): string | undefined {
+    return this.imageBlobs()[url];
+  }
+
+  private preloadEvidenceImages(): void {
+    this.findings.controls.forEach((f) => {
+      this.evidenceStageOptions.forEach((stage) =>
+        this.getEvidenceImages(f, stage).forEach((url) => this.loadImage(url)),
+      );
+    });
+  }
+
+  private loadImage(url: string): void {
+    if (this.imageBlobs()[url] || this.loadingUrls.has(url)) return;
+    this.loadingUrls.add(url);
+    this.http.get(url, { responseType: 'blob' }).subscribe({
+      next: (blob) => this.imageBlobs.update((m) => ({ ...m, [url]: URL.createObjectURL(blob) })),
+      error: () => {
+        this.loadingUrls.delete(url);
+        this.imageBlobs.update((m) => ({ ...m, [url]: 'error' }));
+      },
     });
   }
 

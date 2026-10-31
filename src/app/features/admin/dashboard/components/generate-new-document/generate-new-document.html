@@ -148,7 +148,7 @@
           }
         </div> -->
         <div>
-          <label class="mb-1 block text-xs font-medium text-slate-600">URL </label>
+          <label class="mb-1 block text-xs font-medium text-slate-600">URL/Apk</label>
           <input type="url" formControlName="url" placeholder="https://example.com"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
           @if (metadata.get('url')?.invalid && metadata.get('url')?.touched) {
@@ -241,6 +241,20 @@
           </label>
 
           <input type="date" formControlName="report_preparation_date"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">
+            Application Name
+          </label>
+          <input type="text" placeholder="Enter App Name" formControlName="application_name"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">
+            Application Version
+          </label>
+          <input type="text" formControlName="application_version" placeholder="Enter Version"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
         </div>
         <div class="md:col-span-2">
@@ -387,57 +401,104 @@
           </div>
           <div formGroupName="evidence" class="mt-3 rounded-lg border border-slate-200 bg-white p-3">
             <div class="mb-3 flex items-center gap-2">
-              <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
-                🔎
-              </div>
+              <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100 text-violet-600">🔎</div>
               <h4 class="!text-sm font-semibold text-slate-800 !mb-0">Evidence</h4>
             </div>
 
             <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-              <div>
+              @for (stage of evidenceStageOptions; track stage) {
+              <div class="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
                 <div class="mb-2 flex items-center justify-between">
-                  <span class="text-xs font-semibold text-slate-700">Interim Evidence</span>
-                  <button type="button" (click)="addInterim(finding)"
+                  <span class="text-xs font-semibold text-slate-700">{{ stage | titlecase }} Evidence</span>
+                  <button type="button" (click)="addEvidenceRow(finding, stage)"
                     class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
                     + Add Evidence
                   </button>
                 </div>
-                <div formArrayName="interim" class="space-y-2">
-                  @for (evidence of getInterim(finding).controls; track evidence; let j = $index) {
-                  <div class="flex gap-2">
-                    <input type="text" [formControlName]="j" placeholder="Enter interim evidence"
-                      class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
-                    <button type="button" (click)="removeInterim(finding, j)"
-                      [disabled]="getInterim(finding).length <= 1"
-                      class="w-9 shrink-0 rounded-lg border border-rose-200 text-rose-500 outline-none hover:bg-rose-50 focus:ring-2 focus:ring-rose-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white">
-                      ×
-                    </button>
-                  </div>
-                  }
-                </div>
-              </div>
 
-              <div>
-                <div class="mb-2 flex items-center justify-between">
-                  <span class="text-xs font-semibold text-slate-700">Final Evidence</span>
-                  <button type="button" (click)="addFinal(finding)"
-                    class="text-xs font-medium text-indigo-600 hover:text-indigo-700">
-                    + Add Evidence
-                  </button>
-                </div>
-                <div formArrayName="final" class="space-y-2">
-                  @for (evidence of getFinal(finding).controls; track evidence; let j = $index){
+                <div [formArrayName]="stage" class="space-y-2">
+                  @for (ev of getEvidenceArray(finding, stage).controls; track ev; let j = $index) {
                   <div class="flex gap-2">
-                    <input type="text" [formControlName]="j" placeholder="Enter final evidence"
+                    <input type="text" [formControlName]="j" [placeholder]="'Enter ' + stage + ' evidence'"
                       class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
-                    <button type="button" (click)="removeFinal(finding, j)" [disabled]="getFinal(finding).length <= 1"
-                      class="w-9 shrink-0 rounded-lg border border-rose-200 text-rose-500 outline-none hover:bg-rose-50 focus:ring-2 focus:ring-rose-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white">
+                    <button type="button" (click)="removeEvidenceRow(finding, stage, j)"
+                      [disabled]="getEvidenceArray(finding, stage).length <= 1"
+                      class="w-9 shrink-0 rounded-lg border border-rose-200 bg-white text-rose-500 outline-none hover:bg-rose-50 focus:ring-2 focus:ring-rose-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white">
                       ×
                     </button>
                   </div>
                   }
                 </div>
+
+                @if (getEvidenceImages(finding, stage).length) {
+                <div class="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3">
+                  @for (url of getEvidenceImages(finding, stage); track url) {
+                  @let src = imageSrc(url);
+                  <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                    @if (!src) {
+                    <div class="flex h-24 items-center justify-center text-[11px] text-slate-400">Loading...</div>
+                    } @else if (src === 'error') {
+                    <div class="flex h-24 items-center justify-center px-2 text-center text-[11px] text-rose-500">
+                      Could not load image
+                    </div>
+                    } @else {
+                    <a [href]="src" target="_blank" rel="noopener">
+                      <img [src]="src" [alt]="stage + ' evidence'" class="h-24 w-full object-cover" />
+                    </a>
+                    }
+                  </div>
+                  }
+                </div>
+                }
               </div>
+              }
+            </div>
+          </div>
+          <div class="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+            <div class="mb-3 flex items-center gap-2">
+              <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100 text-violet-600">🖼️</div>
+              <h4 class="!text-sm font-semibold text-slate-800 !mb-0">Upload Evidence</h4>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Stage</label>
+                <select formControlName="evidence_stage"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
+                  <option value="">Select Stage</option>
+                  @for (s of evidenceStageOptions; track s) {
+                  <option [value]="s">{{ s | titlecase }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-600">Images (multiple)</label>
+                <input type="file" multiple accept="image/*" (change)="onEvidenceFiles($event, finding)"
+                  class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+              </div>
+            </div>
+
+            @if (getEvidenceItems(finding).length) {
+            <div class="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-6">
+              @for (item of getEvidenceItems(finding); track item.preview; let j = $index) {
+              <div class="relative rounded-lg border border-slate-200 p-1">
+                <img [src]="item.preview" class="h-20 w-full rounded object-cover" alt="evidence" />
+                <span class="absolute left-1 top-1 rounded bg-slate-800/70 px-1.5 text-[10px] text-white">{{ item.stage
+                  | titlecase }}</span>
+                <button type="button" (click)="removeEvidenceItem(finding, j)"
+                  class="absolute right-1 top-1 h-5 w-5 rounded-full bg-rose-500 text-xs text-white">×</button>
+                <div class="mt-1 truncate text-[10px] text-slate-500">{{ item.file.name }}</div>
+              </div>
+              }
+            </div>
+            }
+
+            <div class="mt-3 flex justify-end">
+              <button type="button" (click)="uploadFindingEvidence(finding, i)"
+                [disabled]="uploadingFinding() !== null || !getEvidenceItems(finding).length"
+                class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                @if (uploadingFinding() === i) { Uploading... } @else { ⬆ Upload Evidence }
+              </button>
             </div>
           </div>
         </div>
@@ -747,7 +808,7 @@
     </section>
 
     <!-- CONTROLS -->
-    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <!-- <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div class="mb-3 flex items-center justify-between">
         <div>
           <h2 class="!text-base font-semibold text-slate-800 !mb-0.5">Controls</h2>
@@ -818,7 +879,7 @@
         </div>
         }
       </div>
-    </section>
+    </section> -->
 
     <!-- CERTIFICATE -->
 
@@ -833,7 +894,7 @@
         </p>
       </div>
 
-      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div>
           <label class="mb-1 block text-xs font-medium text-slate-600">
             Site URL
@@ -850,6 +911,28 @@
 
           <input type="text" formControlName="environment_details"
             placeholder="Production - Windows Server 2019, IIS 10, .NET 4.8"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">
+            Lines Of Code
+          </label>
+
+          <input type="text" formControlName="lines_of_code" placeholder="Lines Of Code"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">
+            Hash Algorithm
+          </label>
+          <input type="text" formControlName="hash_algorithem" placeholder="Hash Algorithm"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+        </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-600">
+            App Permission
+          </label>
+          <input type="text" formControlName="app_permission" placeholder="App Permission"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
         </div>
 
