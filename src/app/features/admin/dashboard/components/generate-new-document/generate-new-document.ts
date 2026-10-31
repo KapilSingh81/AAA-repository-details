@@ -686,7 +686,7 @@ export class GenerateNewDocument implements OnInit {
           : data.certificate?.extra_recommendations ?? '',
         lines_of_code: data.certificate?.lines_of_code ?? '',
         hash_algorithem: data.certificate?.hash_algorithem ?? '',
-        app_permission:  data.certificate?.app_permission ?? '',
+        app_permission: data.certificate?.app_permission ?? '',
       },
       summary: {
         total_observations: data.summary?.total_observations ?? 0,
@@ -789,7 +789,7 @@ export class GenerateNewDocument implements OnInit {
       const fd = new FormData();
       fd.append('finding_index', String(index));
       fd.append('stage', stage);
-      group.forEach((g: any) => fd.append('image', g.file));
+      group.forEach((g: any) => fd.append('images', g.file));
 
       return this.documentService.uploadEvidance(fd, docId).pipe(
         map((res: any) => ({
@@ -856,18 +856,21 @@ export class GenerateNewDocument implements OnInit {
   private refreshEvidenceImages(): void {
     this.documentService.documentById(this.documentId()).subscribe({
       next: (res: any) => {
-        const data = res?.body;
-        (data?.findings ?? []).forEach((f: any, idx: number) => {
-          const group = this.findings.at(idx);
-          if (!group) return;
-          this.evidenceStageOptions.forEach((stage) => {
-            const all: string[] = Array.isArray(f?.evidence?.[stage]) ? f.evidence[stage] : [];
-            group
-              .get(`evidence_images.${stage}`)
-              ?.setValue(all.filter((v) => this.isImageUrl(v)).map((v) => v.trim()));
+        queueMicrotask(() => {
+          const data = res?.body;
+          (data?.findings ?? []).forEach((f: any, idx: number) => {
+            const group = this.findings.at(idx);
+            if (!group) return;
+            this.evidenceStageOptions.forEach((stage) => {
+              const all: string[] = Array.isArray(f?.evidence?.[stage]) ? f.evidence[stage] : [];
+              group
+                .get(`evidence_images.${stage}`)
+                ?.setValue(all.filter((v) => this.isImageUrl(v)).map((v) => v.trim()));
+            });
           });
+          this.preloadEvidenceImages();
+          this.cdr.markForCheck();
         });
-        this.preloadEvidenceImages();
       },
     });
   }

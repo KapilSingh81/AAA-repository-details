@@ -429,8 +429,6 @@
                   </div>
                   }
                 </div>
-
-                @if (getEvidenceImages(finding, stage).length) {
                 <div class="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3">
                   @for (url of getEvidenceImages(finding, stage); track url) {
                   @let src = imageSrc(url);
@@ -449,7 +447,6 @@
                   </div>
                   }
                 </div>
-                }
               </div>
               }
             </div>
