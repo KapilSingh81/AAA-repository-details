@@ -92,8 +92,8 @@ export class GenerateNewDocument implements OnInit {
       environment_details: [''],
       extra_recommendations: [''],
       lines_of_code: [''],
-      hash_algorithem: [''],
-      app_permission: ['']
+      hash_algorithm: [''],
+      app_permissions: ['']
     }),
     findings: this.fb.array([]),
     auditors: this.fb.array([]),
@@ -491,8 +491,8 @@ export class GenerateNewDocument implements OnInit {
         site_url: formValue.certificate.site_url,
         environment_details: formValue.certificate.environment_details,
         lines_of_code: formValue.certificate.lines_of_code,
-        hash_algorithem: formValue.certificate.hash_algorithem,
-        app_permission: formValue.certificate.app_permission,
+        hash_algorithm: formValue.certificate.hash_algorithm,
+        app_permissions: formValue.certificate.app_permissions,
         extra_recommendations: formValue.certificate.extra_recommendations
           ? formValue.certificate.extra_recommendations
             .split(',')
@@ -576,8 +576,8 @@ export class GenerateNewDocument implements OnInit {
         environment_details: '',
         extra_recommendations: '',
         lines_of_code: '',
-        hash_algorithem: '',
-        app_permission: ''
+        hash_algorithm: '',
+        app_permissions: ''
       },
       summary: {
         total_observations: 0,
@@ -646,7 +646,8 @@ export class GenerateNewDocument implements OnInit {
 
   private patchFormWithData(data: any): void {
     const execPeriod = this.parseExecutionPeriod(data.metadata?.execution_period);
-
+    console.log(data);
+    
     this.documentForm.patchValue({
       project_name: data.project_name,
       client_name: data.client_name,
@@ -685,8 +686,8 @@ export class GenerateNewDocument implements OnInit {
           ? data.certificate.extra_recommendations.join(', ')
           : data.certificate?.extra_recommendations ?? '',
         lines_of_code: data.certificate?.lines_of_code ?? '',
-        hash_algorithem: data.certificate?.hash_algorithem ?? '',
-        app_permission: data.certificate?.app_permission ?? '',
+        hash_algorithm: data.certificate?.hash_algorithm ?? '',
+        app_permissions: data.certificate?.app_permissions ?? '',
       },
       summary: {
         total_observations: data.summary?.total_observations ?? 0,
