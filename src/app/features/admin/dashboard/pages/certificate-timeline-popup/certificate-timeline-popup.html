@@ -1,0 +1,104 @@
+<div class="modal-header tl-header">
+  <div>
+    <h5 class="modal-title mb-0">Certificate Timeline</h5>
+    @if (summary) {
+      <div class="tl-sub">
+        {{ summary.project_name }}
+        @if (summary.client_name) {
+          <span class="dot">•</span>{{ summary.client_name }}
+        }
+      </div>
+    }
+  </div>
+  <button type="button" class="btn-close" (click)="close()"></button>
+</div>
+
+@if (isLoading) {
+  <div class="modal-body">
+    <div class="d-flex justify-content-center py-5">
+      <div class="spinner-border text-primary"></div>
+    </div>
+  </div>
+} @else if (error) {
+  <div class="modal-body">
+    <div class="alert alert-danger mb-3">{{ error }}</div>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="load()">Retry</button>
+  </div>
+} @else {
+  <div class="tl-body">
+
+    <!-- Summary -->
+    <div class="tl-stats">
+      @for (stat of stats; track stat.label) {
+        <div class="tl-stat">
+          <div class="tl-stat-label">{{ stat.label }}</div>
+          @if (stat.badge) {
+            <span class="tl-pill" [ngClass]="stat.badge">{{ stat.value }}</span>
+          } @else {
+            <div class="tl-stat-value">{{ stat.value }}</div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="tl-counts">
+      @for (c of counts; track c.label) {
+        <span class="tl-count">{{ c.label }} <strong>{{ c.value }}</strong></span>
+      }
+    </div>
+
+    <!-- Activity -->
+    <h6 class="tl-section-title">Activity</h6>
+    <ol class="tl-list">
+      @for (ev of events; track ev.step) {
+        <li class="tl-item">
+          <span class="tl-icon" [ngClass]="ev.tone">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                 stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="ev.icon" />
+            </svg>
+          </span>
+
+          <div class="tl-card">
+            <div class="tl-card-head">
+              <span class="tl-title">{{ ev.title }}</span>
+              <span class="tl-time">{{ ev.at }}</span>
+            </div>
+
+            <div class="tl-meta">
+              By <strong>{{ ev.by }}</strong>
+              @if (ev.email) {
+                <span class="tl-email">{{ ev.email }}</span>
+              }
+            </div>
+
+            @if (ev.chips.length) {
+              <div class="tl-chips">
+                @for (chip of ev.chips; track chip.label) {
+                  <span class="tl-chip"><span>{{ chip.label }}</span>{{ chip.value }}</span>
+                }
+              </div>
+            }
+
+            @if (ev.since) {
+              <div class="tl-since">{{ ev.since }} after the previous step</div>
+            }
+          </div>
+        </li>
+      } @empty {
+        <li class="tl-empty">No activity has been recorded for this project yet.</li>
+      }
+    </ol>
+
+    @if (summary?.history_reconstructed) {
+      <p class="tl-note">
+        Part of this history was reconstructed from existing records, so some steps may not show an exact processing time.
+      </p>
+    }
+  </div>
+}
+
+<div class="tl-footer">
+  <span class="tl-tz">All times are shown in {{ timezone }}</span>
+  <button type="button" class="btn btn-outline-secondary" (click)="close()">Close</button>
+</div>
