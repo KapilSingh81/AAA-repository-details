@@ -22,6 +22,8 @@ import { FormsModule } from '@angular/forms';
 import { GenerateProjectPopup } from '../../components/generate-project-popup/generate-project-popup';
 import { DocumentEvidance } from '../../components/document-evidance/document-evidance';
 import { GenerateCertificate } from '../../components/generate-certificate/generate-certificate';
+import { FinalizeDocumentPopup } from '../finalize-document-popup/finalize-document-popup';
+import { CertificateTimelinePopup } from '../certificate-timeline-popup/certificate-timeline-popup';
 
 interface Document {
   id: string;
@@ -32,6 +34,9 @@ interface Document {
   certificate_download_url: string;
   created_at: string;
   is_generated: boolean;
+  can_finalize?: boolean;
+  can_regenerate?: boolean;
+  stage?: string;
   status: string;
 }
 
@@ -135,7 +140,6 @@ export class ManageDashboard {
     });
   }
 
-  // Authorization Methods - Only checks for token
   isAuthorized(): boolean {
     const token = this.cookieService.get('aaa-token');
     return !!(token && token.length > 0);
@@ -147,7 +151,6 @@ export class ManageDashboard {
     );
   }
 
-  // Handle download with token in URL (simplest approach)
   handleDownload(doc: Document, type: 'report' | 'certificate') {
     if (!this.isAuthorized()) {
       this.showUnauthorizedMessage();
@@ -691,31 +694,63 @@ export class ManageDashboard {
     }
   }
 
-  onFinalizeDocument(doc: any): void {
-  this.closeActionMenu();
 
-  const payload = {};
+  canFinalize(doc: Document | null): boolean {
+    if (!doc) return false;
+    if (doc.is_generated === true) return true;
 
-  this.documentService.finlizeDocument(payload, doc.id).subscribe({
-    next: (res: any) => {
-      if (res?.body?.code === 200) {
-        this.notification.success(
-          res?.body?.message || 'Document finalized successfully.'
-        );
+    const hasCertificate = !!doc.certificate_download_url;
+    return doc.can_finalize === true && !hasCertificate;
+  }
 
-        this.getDocumentList();
-      } else {
-        this.notification.error(
-          res?.error?.message || 'Failed to finalize document.'
-        );
-      }
-    },
+  // Regenerate tabhi dikhe jab certificate pehle se bana ho
+  // Backend `can_regenerate: false` bheje (report me koi change nahi) to button hide ho jayega.
+  // Flag na aaye to purana behaviour (certificate hone par dikhe).
+  canRegenerate(doc: Document | null): boolean {
+    return !!doc && doc.is_generated === false && !!doc.certificate_download_url;
+  }
 
-    error: (error: any) => {
-      this.notification.error(
-        error?.error?.message || 'Failed to finalize document.'
-      );
-    },
-  });
-}
+  onFinalizeDocument(doc: Document): void {
+    this.openFinalizePopup(doc, 'finalize');
+  }
+
+  onShowTimeline(doc: Document): void {
+    this.closeActionMenu();
+    this.cdr.detectChanges();
+
+    this.bsModalRef = this.modalService.show(CertificateTimelinePopup, {
+      initialState: { editData: doc },
+      id: 'certificate-timeline',
+      class: 'modal-lg modal-dialog-centered',
+    });
+  }
+
+  onRegenerateCertificate(doc: Document): void {
+    this.openFinalizePopup(doc, 'regenerate');
+  }
+
+  // Dono buttons same popup kholte hain, sirf mode alag hota hai
+  private openFinalizePopup(doc: Document, mode: 'finalize' | 'regenerate'): void {
+    this.closeActionMenu();
+    this.cdr.detectChanges();
+
+    const initialState: ModalOptions = {
+      initialState: {
+        editData: doc,
+        mode,
+      },
+    };
+    this.bsModalRef = this.modalService.show(
+      FinalizeDocumentPopup,
+      Object.assign(initialState, {
+        id: 'finalize-document',
+        class: 'modal-lg modal-dialog-centered alert-popup',
+        backdrop: 'static',
+      }),
+    );
+
+    this.bsModalRef?.content?.mapdata?.subscribe(() => {
+      this.getDocumentList();
+    });
+  }
 }

@@ -80,9 +80,20 @@ export class DocumentService {
     return this.apiService.post(url, payload).pipe(catchError((error: HttpErrorResponse) => of(error)));
   };
 
-   finlizeDocument(payload: any,projectId:any): Observable<any> {
-    const url = API_CONSTANT.finalizeDocument.replace('{project_id}',projectId);
+ 
+  finlizeDocument(payload: any, projectId: any): Observable<any> {
+    const url = API_CONSTANT.finalizeDocument.replace('{project_id}', projectId);
     return this.apiService.post(url, payload);
+  }
+
+  regenerateCertificate(payload: any, projectId: any): Observable<any> {
+  const url = API_CONSTANT.regenerateCertificate.replace('{project_id}', projectId);
+  return this.apiService.post(url, payload);
+}
+
+ certificateTimeline(projectId: any): Observable<any> {
+    const url = API_CONSTANT.certificateTimeline.replace('{project_id}', projectId);
+    return this.apiService.get(url);
   }
 
 }

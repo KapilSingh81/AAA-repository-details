@@ -43,12 +43,12 @@ export class AddDocment {
     this.getDocumentList();
   }
 
-  getDocumentList() {
-    this.commonService.documentTypeList().subscribe((res: any) => {
-      this.documentTypeList = res?.body?.types || []
-      this.cdr.detectChanges();
-    })
-  }
+getDocumentList() {
+  this.commonService.documentTypeList().subscribe((res: any) => {
+    this.documentTypeList = res?.body?.options || [];
+    this.cdr.detectChanges();
+  });
+}
 
   close(e: Event) {
     e.preventDefault();
