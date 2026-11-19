@@ -1,0 +1,267 @@
+
+      .tl-header {
+        align-items: flex-start;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .tl-sub {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin-top: 0.15rem;
+      }
+      .tl-sub .dot {
+        margin: 0 0.35rem;
+        color: #cbd5e1;
+      }
+      .tl-body {
+        max-height: calc(100vh - 220px);
+        overflow-y: auto;
+        padding: 1.25rem 1.5rem 1.5rem;
+        background: #f8fafc;
+      }
+
+      /* summary cards */
+      .tl-stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 0.9rem;
+      }
+      @media (max-width: 768px) {
+        .tl-stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      .tl-stat {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 0.8rem 0.95rem;
+        min-width: 0;
+      }
+      .tl-stat-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 0.3rem;
+      }
+      .tl-stat-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #0f172a;
+        word-break: break-all;
+      }
+      .tl-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+      }
+      .tl-pill::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .tl-pill.success {
+        background: #ecfdf5;
+        color: #047857;
+        border-color: #a7f3d0;
+      }
+      .tl-pill.warning {
+        background: #fffbeb;
+        color: #b45309;
+        border-color: #fde68a;
+      }
+      .tl-pill.neutral {
+        background: #f1f5f9;
+        color: #475569;
+        border-color: #e2e8f0;
+      }
+
+      /* counts */
+      .tl-counts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.4rem;
+      }
+      .tl-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.78rem;
+        color: #475569;
+      }
+      .tl-count strong {
+        color: #0f172a;
+        font-weight: 700;
+      }
+
+      .tl-section-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #475569;
+        margin: 0 0 1rem;
+      }
+
+      /* timeline */
+      .tl-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .tl-item {
+        position: relative;
+        display: flex;
+        gap: 1rem;
+        padding-bottom: 1.1rem;
+      }
+      .tl-item:last-child {
+        padding-bottom: 0;
+      }
+      .tl-item:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: 17px;
+        top: 38px;
+        bottom: 0;
+        width: 2px;
+        background: #e2e8f0;
+      }
+      .tl-icon {
+        flex: 0 0 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 1px #e5e7eb;
+        z-index: 1;
+      }
+      .tl-icon svg {
+        width: 18px;
+        height: 18px;
+      }
+      .tone-blue {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+      .tone-indigo {
+        background: #e0e7ff;
+        color: #4338ca;
+      }
+      .tone-emerald {
+        background: #d1fae5;
+        color: #047857;
+      }
+      .tone-purple {
+        background: #ede9fe;
+        color: #6d28d9;
+      }
+      .tone-amber {
+        background: #fef3c7;
+        color: #b45309;
+      }
+      .tone-slate {
+        background: #e2e8f0;
+        color: #475569;
+      }
+      .tl-card {
+        flex: 1;
+        min-width: 0;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 0.8rem 1rem;
+      }
+      .tl-card-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.25rem 1rem;
+      }
+      .tl-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #0f172a;
+      }
+      .tl-time {
+        font-size: 0.78rem;
+        color: #64748b;
+        white-space: nowrap;
+      }
+      .tl-meta {
+        font-size: 0.82rem;
+        color: #475569;
+        margin-top: 0.25rem;
+      }
+      .tl-meta strong {
+        color: #1e293b;
+        font-weight: 600;
+      }
+      .tl-email {
+        color: #94a3b8;
+        margin-left: 0.35rem;
+      }
+      .tl-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-top: 0.6rem;
+      }
+      .tl-chip {
+        font-size: 0.75rem;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.15rem 0.5rem;
+        color: #334155;
+        word-break: break-all;
+      }
+      .tl-chip span {
+        color: #64748b;
+        margin-right: 0.3rem;
+      }
+      .tl-since {
+        margin-top: 0.55rem;
+        font-size: 0.75rem;
+        color: #94a3b8;
+      }
+      .tl-empty {
+        text-align: center;
+        color: #64748b;
+        font-size: 0.9rem;
+        padding: 1.5rem 0;
+      }
+      .tl-note {
+        margin: 1.1rem 0 0;
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+      .tl-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.8rem 1.5rem;
+        border-top: 1px solid #e5e7eb;
+      }
+      .tl-tz {
+        font-size: 0.78rem;
+        color: #64748b;
+      }
