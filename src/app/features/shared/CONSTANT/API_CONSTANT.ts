@@ -23,5 +23,6 @@ export const API_CONSTANT = {
   finalizeDocument: 'documents/{project_id}/finalize',
   regenerateCertificate: 'certificates/{project_id}/regenerate',
   certificateTimeline: 'certificates/{project_id}/timeline',
+  reuploadDocument: 'documents/{project_id}/reupload',
 
 }

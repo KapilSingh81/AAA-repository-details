@@ -1,29 +1,32 @@
 import { CommonModule } from '@angular/common';
 import {
-  Component,
-  signal,
-  computed,
-  inject,
   ChangeDetectorRef,
-  HostListener,
+  Component,
+  computed,
   ElementRef,
+  HostListener,
+  inject,
+  OnInit,
+  signal,
   ViewChild,
 } from '@angular/core';
-import { BsModalRef, BsModalService, ModalOptions } from 'ngx-bootstrap/modal';
-import { AddDocment } from '../../components/add-docment/add-docment';
-import { DocumentService } from '../../services/document-service';
-import { CommonService } from '../../../../shared/services/common-services/common-service';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { Subject } from 'rxjs';
-import { Router } from '@angular/router';
-import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
-import { CookieService } from 'ngx-cookie-service';
 import { FormsModule } from '@angular/forms';
-import { GenerateProjectPopup } from '../../components/generate-project-popup/generate-project-popup';
+import { Router } from '@angular/router';
+import { BsModalRef, BsModalService, ModalOptions } from 'ngx-bootstrap/modal';
+import { CookieService } from 'ngx-cookie-service';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { CommonService } from '../../../../shared/services/common-services/common-service';
+import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
+import { AddDocment } from '../../components/add-docment/add-docment';
 import { DocumentEvidance } from '../../components/document-evidance/document-evidance';
 import { GenerateCertificate } from '../../components/generate-certificate/generate-certificate';
-import { FinalizeDocumentPopup } from '../finalize-document-popup/finalize-document-popup';
+import { GenerateProjectPopup } from '../../components/generate-project-popup/generate-project-popup';
+// import { ReuploadDocument } from '../../components/reupload-document/reupload-document';
+import { DocumentService } from '../../services/document-service';
 import { CertificateTimelinePopup } from '../certificate-timeline-popup/certificate-timeline-popup';
+import { FinalizeDocumentPopup } from '../finalize-document-popup/finalize-document-popup';
+import { ReuploadDocument } from '../reupload-document/reupload-document';
 
 interface Document {
   id: string;
@@ -46,7 +49,10 @@ interface Document {
   templateUrl: './manage-dashboard.html',
   styleUrl: './manage-dashboard.scss',
 })
-export class ManageDashboard {
+export class ManageDashboard implements OnInit {
+  @ViewChild('dropdownWrapper') dropdownWrapper!: ElementRef;
+  @ViewChild('actionDropdown') actionDropdownRef?: ElementRef<HTMLElement>;
+
   private modalService = inject(BsModalService);
   private documentService = inject(DocumentService);
   private commonService = inject(CommonService);
@@ -56,17 +62,40 @@ export class ManageDashboard {
   private cookieService = inject(CookieService);
   private eRef = inject(ElementRef);
 
+  private searchSubject = new Subject<string>();
+  private activeTriggerEl: HTMLElement | null = null;
+  private scrollRafId: number | null = null;
+
+  Math = Math;
+  bsModalRef!: BsModalRef;
+  documentTypeList: any;
+
   viewMode = signal<'table' | 'card'>('table');
   currentPage = signal(1);
   pageSize = signal(10);
-  bsModalRef!: BsModalRef;
   isLoading = signal(false);
   isDownloading = signal<string | null>(null);
   searchName = signal('');
   selectedType = signal('');
   selectedStatus = signal('');
-  documentTypeList: any;
-  private searchSubject = new Subject<string>();
+
+  private allDocuments = signal<Document[]>([]);
+  totalCount = signal(0);
+  totalDocsStat = signal(0);
+  completedStat = signal(0);
+  processingStat = signal(0);
+  draftsStat = signal(0);
+
+  documents = computed(() => this.allDocuments());
+  totalItems = computed(() => this.totalCount());
+  totalPages = computed(() => Math.ceil(this.totalItems() / this.pageSize()));
+
+  isDropdownOpen = false;
+  openActionMenuId: string | null = null;
+  activeDoc: Document | null = null;
+  menuPosition = { top: 0, left: 0 };
+  menuOpensUp = false;
+  menuReady = false;
 
   private auditIconMap: { [key: string]: string } = {
     web: '🌐',
@@ -122,14 +151,15 @@ export class ManageDashboard {
     default: 'bg-gray-500 text-gray-800',
   };
 
-  private allDocuments = signal<Document[]>([]);
-  totalCount = signal(0);
-
-  documents = computed(() => this.allDocuments());
-
-  totalItems = computed(() => this.totalCount());
-  totalPages = computed(() => Math.ceil(this.totalItems() / this.pageSize()));
-  Math = Math;
+  private fileIconMap: { [key: string]: { icon: string; color: string } } = {
+    pdf: { icon: '📄', color: 'text-red-500 bg-red-50' },
+    xls: { icon: '📊', color: 'text-green-600 bg-green-50' },
+    xlsx: { icon: '📊', color: 'text-green-600 bg-green-50' },
+    doc: { icon: '📝', color: 'text-blue-600 bg-blue-50' },
+    docx: { icon: '📝', color: 'text-blue-600 bg-blue-50' },
+    ppt: { icon: '📽️', color: 'text-orange-500 bg-orange-50' },
+    default: { icon: '📄', color: 'text-slate-500 bg-slate-50' },
+  };
 
   ngOnInit() {
     this.getDocumentList();
@@ -138,51 +168,6 @@ export class ManageDashboard {
     this.searchSubject.pipe(debounceTime(500), distinctUntilChanged()).subscribe(() => {
       this.getDocumentList();
     });
-  }
-
-  isAuthorized(): boolean {
-    const token = this.cookieService.get('aaa-token');
-    return !!(token && token.length > 0);
-  }
-
-  showUnauthorizedMessage() {
-    this.notification.error(
-      'You are not authorized to download this document. Please login again.',
-    );
-  }
-
-  handleDownload(doc: Document, type: 'report' | 'certificate') {
-    if (!this.isAuthorized()) {
-      this.showUnauthorizedMessage();
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    const token = this.cookieService.get('aaa-token');
-    if (!token) {
-      this.notification.error('Session expired. Please login again.');
-      this.router.navigate(['/login']);
-      return;
-    }
-    const url = type === 'report' ? doc.report_download_url : doc.certificate_download_url;
-    if (!url) {
-      this.notification.error('Download URL not available');
-      return;
-    }
-    this.isDownloading.set(`${doc.id}-${type}`);
-    const separator = url.includes('?') ? '&' : '?';
-    const downloadUrl = `${url}${separator}token=${encodeURIComponent(token)}`;
-    const newWindow = window.open(downloadUrl, '_blank');
-    setTimeout(() => {
-      this.isDownloading.set(null);
-    }, 2000);
-
-    if (newWindow) {
-      this.notification.success(`${type === 'report' ? 'Report' : 'Certificate'} download started`);
-    } else {
-      window.location.href = downloadUrl;
-      this.notification.success(`${type === 'report' ? 'Report' : 'Certificate'} download started`);
-    }
   }
 
   getDocumentTypeList() {
@@ -194,7 +179,7 @@ export class ManageDashboard {
 
   getDocumentList() {
     this.isLoading.set(true);
-    let payload: any = {
+    const payload: any = {
       uuid: null,
       name: this.searchName() || null,
       audit_type: this.selectedType() || null,
@@ -236,6 +221,19 @@ export class ManageDashboard {
     this.getDocumentList();
   }
 
+  onStatusCardClick(status: string) {
+    this.selectedStatus.set(status);
+    this.currentPage.set(1);
+    this.getDocumentList();
+  }
+
+  onPageSizeChange(event: Event) {
+    const value = Number((event.target as HTMLSelectElement).value);
+    this.pageSize.set(value);
+    this.currentPage.set(1);
+    this.getDocumentList();
+  }
+
   clearFilters() {
     this.searchName.set('');
     this.selectedType.set('');
@@ -244,6 +242,50 @@ export class ManageDashboard {
     this.currentPage.set(1);
     this.pageSize.set(10);
     this.getDocumentList();
+  }
+
+  setViewMode(mode: 'table' | 'card') {
+    this.viewMode.set(mode);
+  }
+
+  changePage(page: number) {
+    if (page >= 1 && page <= this.totalPages() && page !== this.currentPage()) {
+      this.currentPage.set(page);
+      this.getDocumentList();
+    }
+  }
+
+  getPageNumbers(): number[] {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const pages: number[] = [];
+
+    if (total <= 5) {
+      for (let i = 1; i <= total; i++) {
+        pages.push(i);
+      }
+    } else if (current <= 3) {
+      for (let i = 1; i <= 4; i++) {
+        pages.push(i);
+      }
+      pages.push(-1);
+      pages.push(total);
+    } else if (current >= total - 2) {
+      pages.push(1);
+      pages.push(-1);
+      for (let i = total - 3; i <= total; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      pages.push(-1);
+      for (let i = current - 1; i <= current + 1; i++) {
+        pages.push(i);
+      }
+      pages.push(-1);
+      pages.push(total);
+    }
+    return pages;
   }
 
   getIcon(doc: Document): string {
@@ -308,216 +350,13 @@ export class ManageDashboard {
     return this.auditBadgeMap['default'];
   }
 
-  setViewMode(mode: 'table' | 'card') {
-    this.viewMode.set(mode);
-  }
-
-  changePage(page: number) {
-    if (page >= 1 && page <= this.totalPages() && page !== this.currentPage()) {
-      this.currentPage.set(page);
-      this.getDocumentList();
-    }
-  }
-
-  onStatusCardClick(status: string) {
-    this.selectedStatus.set(status);
-    this.currentPage.set(1);
-    this.getDocumentList();
-  }
-
-  onGenerateCertificate(value: any) {
-    this.closeActionMenu();
-    this.cdr.detectChanges();
-    const initialState: ModalOptions = {
-      initialState: {
-        editData: value ? value : '',
-      },
-    };
-    this.bsModalRef = this.modalService.show(
-      GenerateCertificate,
-      Object.assign(initialState, {
-        id: 'confirmation',
-        class: 'modal-lg modal-dialog-centered alert-popup',
-      }),
-    );
-    this.bsModalRef?.content.mapdata.subscribe((value: any) => {
-      this.searchName.set('');
-      this.selectedType.set('');
-      this.searchSubject.next('');
-      this.currentPage.set(1);
-      this.pageSize.set(10);
-      this.getDocumentList();
-    });
-  }
-
-  onPageSizeChange(event: Event) {
-    const value = Number((event.target as HTMLSelectElement).value);
-    this.pageSize.set(value);
-    this.currentPage.set(1);
-    this.getDocumentList();
-  }
-
-  getPageNumbers(): number[] {
-    const total = this.totalPages();
-    const current = this.currentPage();
-    const pages: number[] = [];
-
-    if (total <= 5) {
-      for (let i = 1; i <= total; i++) {
-        pages.push(i);
-      }
-    } else {
-      if (current <= 3) {
-        for (let i = 1; i <= 4; i++) {
-          pages.push(i);
-        }
-        pages.push(-1);
-        pages.push(total);
-      } else if (current >= total - 2) {
-        pages.push(1);
-        pages.push(-1);
-        for (let i = total - 3; i <= total; i++) {
-          pages.push(i);
-        }
-      } else {
-        pages.push(1);
-        pages.push(-1);
-        for (let i = current - 1; i <= current + 1; i++) {
-          pages.push(i);
-        }
-        pages.push(-1);
-        pages.push(total);
-      }
-    }
-    return pages;
-  }
-
-  viewDocument(doc: Document) {
-    const initialState: ModalOptions = {
-      initialState: {
-        editData: doc,
-        viewOnly: true,
-      },
-    };
-    this.bsModalRef = this.modalService.show(
-      AddDocment,
-      Object.assign(initialState, {
-        id: 'view-document',
-        class: 'modal-lg modal-dialog-centered',
-      }),
-    );
-  }
-
-  editDocument(doc: Document) {
-    const initialState: ModalOptions = {
-      initialState: {
-        editData: doc,
-      },
-    };
-    this.bsModalRef = this.modalService.show(
-      AddDocment,
-      Object.assign(initialState, {
-        id: 'edit-document',
-        class: 'modal-lg modal-dialog-centered',
-      }),
-    );
-  }
-
-  deleteDocument(doc: Document) {
-    if (confirm(`Are you sure you want to delete "${doc.name}"?`)) {
-      console.log('Delete document:', doc);
-    }
-  }
-
-  onAddDocs(value: any) {
-    const initialState: ModalOptions = {
-      initialState: {
-        editData: value ? value : null,
-      },
-    };
-    this.bsModalRef = this.modalService.show(
-      AddDocment,
-      Object.assign(initialState, {
-        id: 'confirmation',
-        class: 'modal-lg modal-dialog-centered alert-popup',
-      }),
-    );
-    this.bsModalRef?.content?.mapdata?.subscribe((value: any) => {
-      this.getDocumentList();
-    });
-  }
-
-  insertLineBreaks(text: string | null, interval: number = 200): string {
-    if (!text) return '';
-    return text.toString().replace(new RegExp(`(.{${interval}})`, 'g'), '$1<br>');
-  }
-
-  onShowProjectDetails(doc: any) {
-    this.router.navigate(['/user/project-details', doc.id]);
-  }
-
-  @ViewChild('dropdownWrapper') dropdownWrapper!: ElementRef;
-
-  isDropdownOpen: boolean = false;
-  toggleDropdown(event: MouseEvent) {
-    event.stopPropagation();
-    this.isDropdownOpen = !this.isDropdownOpen;
-  }
-
-  redirecTo(path: any, id: any) {
-    if (id) {
-      this.router.navigate([path, id]);
-    } else {
-      this.router.navigateByUrl(path);
-    }
-  }
-
-  onGenerateDocument(value: any) {
-    const initialState: ModalOptions = {
-      initialState: {
-        editData: value ? value : '',
-      },
-    };
-    this.bsModalRef = this.modalService.show(
-      GenerateProjectPopup,
-      Object.assign(initialState, {
-        id: 'confirmation',
-        class: 'modal-lg modal-dialog-centered alert-popup',
-      }),
-    );
-    this.bsModalRef?.content.mapdata.subscribe((value: any) => {
-      this.searchName.set('');
-      this.selectedType.set('');
-      this.searchSubject.next('');
-      this.currentPage.set(1);
-      this.pageSize.set(10);
-      this.getDocumentList();
-    });
-  }
-
-  onAddEvidance(value: any) {
-    this.closeActionMenu();
-    this.cdr.detectChanges();
-    const initialState: ModalOptions = {
-      initialState: {
-        editData: value ? value : '',
-      },
-    };
-    this.bsModalRef = this.modalService.show(
-      DocumentEvidance,
-      Object.assign(initialState, {
-        id: 'confirmation',
-        class: 'modal-lg modal-dialog-centered alert-popup',
-      }),
-    );
-    this.bsModalRef?.content.mapdata.subscribe((value: any) => {
-      this.searchName.set('');
-      this.selectedType.set('');
-      this.searchSubject.next('');
-      this.currentPage.set(1);
-      this.pageSize.set(10);
-      this.getDocumentList();
-    });
+  getFileIconDetails(doc: Document) {
+    const name = doc.name.toLowerCase();
+    if (name.endsWith('.pdf')) return this.fileIconMap['pdf'];
+    if (name.endsWith('.xls') || name.endsWith('.xlsx')) return this.fileIconMap['xls'];
+    if (name.endsWith('.doc') || name.endsWith('.docx')) return this.fileIconMap['doc'];
+    if (name.endsWith('.ppt') || name.endsWith('.pptx')) return this.fileIconMap['ppt'];
+    return this.fileIconMap['default'];
   }
 
   getAuditStautsClass(status: string): string {
@@ -531,30 +370,6 @@ export class ManageDashboard {
       default:
         return 'bg-light text-dark';
     }
-  }
-
-  totalDocsStat = signal(0);
-  completedStat = signal(0);
-  processingStat = signal(0);
-  draftsStat = signal(0);
-
-  private fileIconMap: { [key: string]: { icon: string; color: string } } = {
-    pdf: { icon: '📄', color: 'text-red-500 bg-red-50' },
-    xls: { icon: '📊', color: 'text-green-600 bg-green-50' },
-    xlsx: { icon: '📊', color: 'text-green-600 bg-green-50' },
-    doc: { icon: '📝', color: 'text-blue-600 bg-blue-50' },
-    docx: { icon: '📝', color: 'text-blue-600 bg-blue-50' },
-    ppt: { icon: '📽️', color: 'text-orange-500 bg-orange-50' },
-    default: { icon: '📄', color: 'text-slate-500 bg-slate-50' },
-  };
-
-  getFileIconDetails(doc: Document) {
-    const name = doc.name.toLowerCase();
-    if (name.endsWith('.pdf')) return this.fileIconMap['pdf'];
-    if (name.endsWith('.xls') || name.endsWith('.xlsx')) return this.fileIconMap['xls'];
-    if (name.endsWith('.doc') || name.endsWith('.docx')) return this.fileIconMap['doc'];
-    if (name.endsWith('.ppt') || name.endsWith('.pptx')) return this.fileIconMap['ppt'];
-    return this.fileIconMap['default'];
   }
 
   getStatusBadgeClass(status: string): string {
@@ -583,15 +398,84 @@ export class ManageDashboard {
     }
   }
 
-  openActionMenuId: string | null = null;
-  activeDoc: Document | null = null;
-  menuPosition = { top: 0, left: 0 };
-  menuOpensUp = false;
-  menuReady = false;
-  private activeTriggerEl: HTMLElement | null = null;
-  private scrollRafId: number | null = null;
+  canFinalize(doc: Document | null): boolean {
+    if (!doc) return false;
+    if (doc.is_generated === true) return true;
 
-  @ViewChild('actionDropdown') actionDropdownRef?: ElementRef<HTMLElement>;
+    const hasCertificate = !!doc.certificate_download_url;
+    return doc.can_finalize === true && !hasCertificate;
+  }
+
+  canRegenerate(doc: Document | null): boolean {
+    return !!doc && doc.is_generated === false && !!doc.certificate_download_url;
+  }
+
+  canReupload(doc: Document | null): boolean {
+    return !!doc && doc.is_generated === false;
+  }
+
+  isAuthorized(): boolean {
+    const token = this.cookieService.get('aaa-token');
+    return !!(token && token.length > 0);
+  }
+
+  showUnauthorizedMessage() {
+    this.notification.error(
+      'You are not authorized to download this document. Please login again.',
+    );
+  }
+
+  handleDownload(doc: Document, type: 'report' | 'certificate') {
+    if (!this.isAuthorized()) {
+      this.showUnauthorizedMessage();
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const token = this.cookieService.get('aaa-token');
+    if (!token) {
+      this.notification.error('Session expired. Please login again.');
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const url = type === 'report' ? doc.report_download_url : doc.certificate_download_url;
+    if (!url) {
+      this.notification.error('Download URL not available');
+      return;
+    }
+
+    this.isDownloading.set(`${doc.id}-${type}`);
+    const separator = url.includes('?') ? '&' : '?';
+    const downloadUrl = `${url}${separator}token=${encodeURIComponent(token)}`;
+    const newWindow = window.open(downloadUrl, '_blank');
+
+    setTimeout(() => {
+      this.isDownloading.set(null);
+    }, 2000);
+
+    if (!newWindow) {
+      window.location.href = downloadUrl;
+    }
+    this.notification.success(`${type === 'report' ? 'Report' : 'Certificate'} download started`);
+  }
+
+  redirecTo(path: any, id: any) {
+    if (id) {
+      this.router.navigate([path, id]);
+    } else {
+      this.router.navigateByUrl(path);
+    }
+  }
+
+  onShowProjectDetails(doc: any) {
+    this.router.navigate(['/user/project-details', doc.id]);
+  }
+
+  toggleDropdown(event: MouseEvent) {
+    event.stopPropagation();
+    this.isDropdownOpen = !this.isDropdownOpen;
+  }
 
   toggleActionMenu(doc: Document, event: MouseEvent) {
     event.stopPropagation();
@@ -606,6 +490,7 @@ export class ManageDashboard {
     this.openActionMenuId = doc.id;
     this.menuReady = false;
     this.cdr.detectChanges();
+
     setTimeout(() => {
       this.positionMenu(btn);
       this.menuReady = true;
@@ -647,6 +532,147 @@ export class ManageDashboard {
     this.activeDoc = null;
     this.activeTriggerEl = null;
     this.menuReady = false;
+  }
+
+  onAddDocs() {
+    this.bsModalRef = this.modalService.show(AddDocment, {
+      id: 'confirmation',
+      class: 'modal-lg modal-dialog-centered alert-popup',
+    });
+    this.bsModalRef?.content?.mapdata?.subscribe(() => {
+      this.getDocumentList();
+    });
+  }
+
+  onReuploadDocument(doc: Document) {
+    this.closeActionMenu();
+    this.cdr.detectChanges();
+
+    const initialState: ModalOptions = {
+      initialState: {
+        editData: doc,
+      },
+    };
+    this.bsModalRef = this.modalService.show(
+      ReuploadDocument,
+      Object.assign(initialState, {
+        id: 'reupload-document',
+        class: 'modal-lg modal-dialog-centered alert-popup',
+      }),
+    );
+    this.bsModalRef?.content?.mapdata?.subscribe(() => {
+      this.getDocumentList();
+    });
+  }
+
+  onGenerateDocument(value: any) {
+    const initialState: ModalOptions = {
+      initialState: {
+        editData: value ? value : '',
+      },
+    };
+    this.bsModalRef = this.modalService.show(
+      GenerateProjectPopup,
+      Object.assign(initialState, {
+        id: 'confirmation',
+        class: 'modal-lg modal-dialog-centered alert-popup',
+      }),
+    );
+    this.bsModalRef?.content.mapdata.subscribe(() => {
+      this.resetFiltersAndReload();
+    });
+  }
+
+  onGenerateCertificate(value: any) {
+    this.closeActionMenu();
+    this.cdr.detectChanges();
+    const initialState: ModalOptions = {
+      initialState: {
+        editData: value ? value : '',
+      },
+    };
+    this.bsModalRef = this.modalService.show(
+      GenerateCertificate,
+      Object.assign(initialState, {
+        id: 'confirmation',
+        class: 'modal-lg modal-dialog-centered alert-popup',
+      }),
+    );
+    this.bsModalRef?.content.mapdata.subscribe(() => {
+      this.resetFiltersAndReload();
+    });
+  }
+
+  onAddEvidance(value: any) {
+    this.closeActionMenu();
+    this.cdr.detectChanges();
+    const initialState: ModalOptions = {
+      initialState: {
+        editData: value ? value : '',
+      },
+    };
+    this.bsModalRef = this.modalService.show(
+      DocumentEvidance,
+      Object.assign(initialState, {
+        id: 'confirmation',
+        class: 'modal-lg modal-dialog-centered alert-popup',
+      }),
+    );
+    this.bsModalRef?.content.mapdata.subscribe(() => {
+      this.resetFiltersAndReload();
+    });
+  }
+
+  onFinalizeDocument(doc: Document): void {
+    this.openFinalizePopup(doc, 'finalize');
+  }
+
+  onRegenerateCertificate(doc: Document): void {
+    this.openFinalizePopup(doc, 'regenerate');
+  }
+
+  onShowTimeline(doc: Document): void {
+    this.closeActionMenu();
+    this.cdr.detectChanges();
+
+    this.bsModalRef = this.modalService.show(CertificateTimelinePopup, {
+      initialState: { editData: doc },
+      id: 'certificate-timeline',
+      class: 'modal-lg modal-dialog-centered',
+    });
+  }
+
+  private openFinalizePopup(doc: Document, mode: 'finalize' | 'regenerate'): void {
+    this.closeActionMenu();
+    this.cdr.detectChanges();
+
+    const initialState: ModalOptions = {
+      initialState: {
+        editData: doc,
+        mode,
+      },
+    };
+    this.bsModalRef = this.modalService.show(
+      FinalizeDocumentPopup,
+      Object.assign(initialState, {
+        id: 'finalize-document',
+        class: 'modal-lg modal-dialog-centered alert-popup',
+        backdrop: 'static',
+      }),
+    );
+
+    this.bsModalRef?.content?.mapdata?.subscribe(() => {
+      this.getDocumentList();
+    });
+  }
+
+  private resetFiltersAndReload() {
+    this.searchName.set('');
+    this.selectedType.set('');
+    this.searchSubject.next('');
+    this.currentPage.set(1);
+    this.pageSize.set(10);
+    this.getDocumentList();
   }
 
   @HostListener('document:click', ['$event'])
@@ -692,65 +718,5 @@ export class ManageDashboard {
     } else {
       this.closeActionMenu();
     }
-  }
-
-
-  canFinalize(doc: Document | null): boolean {
-    if (!doc) return false;
-    if (doc.is_generated === true) return true;
-
-    const hasCertificate = !!doc.certificate_download_url;
-    return doc.can_finalize === true && !hasCertificate;
-  }
-
-  // Regenerate tabhi dikhe jab certificate pehle se bana ho
-  // Backend `can_regenerate: false` bheje (report me koi change nahi) to button hide ho jayega.
-  // Flag na aaye to purana behaviour (certificate hone par dikhe).
-  canRegenerate(doc: Document | null): boolean {
-    return !!doc && doc.is_generated === false && !!doc.certificate_download_url;
-  }
-
-  onFinalizeDocument(doc: Document): void {
-    this.openFinalizePopup(doc, 'finalize');
-  }
-
-  onShowTimeline(doc: Document): void {
-    this.closeActionMenu();
-    this.cdr.detectChanges();
-
-    this.bsModalRef = this.modalService.show(CertificateTimelinePopup, {
-      initialState: { editData: doc },
-      id: 'certificate-timeline',
-      class: 'modal-lg modal-dialog-centered',
-    });
-  }
-
-  onRegenerateCertificate(doc: Document): void {
-    this.openFinalizePopup(doc, 'regenerate');
-  }
-
-  // Dono buttons same popup kholte hain, sirf mode alag hota hai
-  private openFinalizePopup(doc: Document, mode: 'finalize' | 'regenerate'): void {
-    this.closeActionMenu();
-    this.cdr.detectChanges();
-
-    const initialState: ModalOptions = {
-      initialState: {
-        editData: doc,
-        mode,
-      },
-    };
-    this.bsModalRef = this.modalService.show(
-      FinalizeDocumentPopup,
-      Object.assign(initialState, {
-        id: 'finalize-document',
-        class: 'modal-lg modal-dialog-centered alert-popup',
-        backdrop: 'static',
-      }),
-    );
-
-    this.bsModalRef?.content?.mapdata?.subscribe(() => {
-      this.getDocumentList();
-    });
   }
 }

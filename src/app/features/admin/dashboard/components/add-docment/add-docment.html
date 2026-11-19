@@ -8,7 +8,6 @@
 <div class="modal-body">
   <form [formGroup]="documentForm" (ngSubmit)="onSubmit($event)">
     <div class="row">
-      <!-- Project Name -->
       <div class="col-md-6 mb-2">
         <label class="form-label">Project Name <span class="text-danger">*</span></label>
         <input
@@ -31,7 +30,6 @@
         }
       </div>
 
-      <!-- Client Name -->
       <div class="col-md-6 mb-2">
         <label class="form-label">Client Name <span class="text-danger">*</span></label>
         <input
@@ -52,8 +50,7 @@
         }
       </div>
 
-      <!-- Document Upload -->
-      <div class="col-md-6 mb-2">
+      <div class="col-md-8 offset-md-2 mb-2">
         <label class="form-label">Document <span class="text-danger">*</span></label>
         <div
           class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-indigo-400 transition-colors cursor-pointer"
@@ -62,13 +59,13 @@
           }"
           (dragover)="onDragOver($event)"
           (dragleave)="onDragLeave($event)"
-          (drop)="onDrop($event, 'document')"
+          (drop)="onDrop($event)"
           (click)="documentInput.click()"
         >
           <input
             #documentInput
             type="file"
-            (change)="onFileSelected($event, 'document')"
+            (change)="onFileSelected($event)"
             class="hidden"
             accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg"
           />
@@ -98,7 +95,7 @@
               <button
                 type="button"
                 class="text-red-500 hover:text-red-700"
-                (click)="removeFile($event, 'document')"
+                (click)="removeFile($event)"
               >
                 <i class="fa fa-times"></i>
               </button>
@@ -112,77 +109,8 @@
         }
       </div>
 
-      <!-- Certificate Upload -->
-      <div class="col-md-6 mb-2">
-        <label class="form-label">Certificate </label>
-        <div
-          class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-indigo-400 transition-colors cursor-pointer"
-          [ngClass]="{
-            'border-indigo-500 bg-indigo-50': isDragging(),
-          }"
-          (dragover)="onDragOver($event)"
-          (dragleave)="onDragLeave($event)"
-          (drop)="onDrop($event, 'certificate')"
-          (click)="certificateInput.click()"
-        >
-          <input
-            #certificateInput
-            type="file"
-            (change)="onFileSelected($event, 'certificate')"
-            class="hidden"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg"
-          />
-
-          @if (certificateFileLoading()) {
-            <span
-              class="spinner-border spinner-border-sm text-indigo-600 mb-2"
-              role="status"
-              aria-hidden="true"
-            ></span>
-            <p class="text-sm text-slate-600">Loading file...</p>
-          } @else if (!selectedCertificate()) {
-            <i class="fas fa-certificate fa-2x text-slate-400 mb-2"></i>
-            <p class="text-sm text-slate-600">
-              <span class="text-indigo-600 font-medium">Browse</span> or drop your certificate here
-            </p>
-            <p class="text-xs text-slate-400 mt-1">
-              Supported: PDF, Word, Excel, PowerPoint, Images
-            </p>
-          } @else {
-            <i class="fas fa-certificate fa-2x text-slate-400 mb-2"></i>
-            <div class="flex items-center justify-center gap-3">
-              <span class="text-sm font-medium text-slate-700">{{
-                selectedCertificate()?.name
-              }}</span>
-              <span class="text-xs text-slate-500"
-                >({{ formatFileSize(selectedCertificate()?.size || 0) }})</span
-              >
-              <button
-                type="button"
-                class="text-red-500 hover:text-red-700"
-                (click)="removeFile($event, 'certificate')"
-              >
-                <i class="fa fa-times"></i>
-              </button>
-            </div>
-          }
-        </div>
-        @if (documentForm.get('certificate')?.touched && documentForm.get('certificate')?.invalid) {
-          <div class="text-danger">
-            <div>Certificate is required</div>
-          </div>
-        }
-      </div>
       <div class="col-md-6 mb-2">
         <label class="form-label">Document Type <span class="text-danger">*</span></label>
-        <!-- <select class="form-select" formControlName="type">
-                    <option value="">Select Document Type</option>
-                    @for (type of documentTypeList; track type) {
-                    <option value="{{type}}">
-                        {{type}}
-                    </option>
-                    }
-                </select> -->
         <select class="form-select" formControlName="type">
           <option value="">Select Document Type</option>
           @for (type of documentTypeList; track type.value) {

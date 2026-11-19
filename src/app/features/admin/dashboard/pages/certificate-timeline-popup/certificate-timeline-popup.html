@@ -1,21 +1,44 @@
-<div class="modal-header tl-header">
-  <div>
-    <h5 class="modal-title mb-0">Certificate Timeline</h5>
-    @if (summary) {
-      <div class="tl-sub">
-        {{ summary.project_name }}
-        @if (summary.client_name) {
-          <span class="dot">•</span>{{ summary.client_name }}
-        }
-      </div>
-    }
+<div
+  class="modal-header !items-start !border-0 !px-6 !py-5 !text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 rounded-t-[0.5rem]"
+>
+  <div class="flex items-center gap-3">
+    <span
+      class="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.7"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </span>
+    <div>
+      <h5 class="modal-title mb-0 !text-lg !font-bold !text-white">Certificate Timeline</h5>
+      @if (summary) {
+        <div class="mt-0.5 text-[0.85rem] text-white/80">
+          {{ summary.project_name }}
+          @if (summary.client_name) {
+            <span class="mx-1.5 text-white/50">•</span>{{ summary.client_name }}
+          }
+        </div>
+      }
+    </div>
   </div>
-  <button type="button" class="btn-close" (click)="close()"></button>
+
+  <button type="button" class="btn-close btn-close-white" (click)="close()"></button>
 </div>
 
 @if (isLoading) {
   <div class="modal-body">
-    <div class="d-flex justify-content-center py-5">
+    <div class="flex justify-center py-12">
       <div class="spinner-border text-primary"></div>
     </div>
   </div>
@@ -25,80 +48,225 @@
     <button type="button" class="btn btn-outline-primary btn-sm" (click)="load()">Retry</button>
   </div>
 } @else {
-  <div class="tl-body">
-
-    <!-- Summary -->
-    <div class="tl-stats">
+  <div
+    class="max-h-[calc(100vh-240px)] overflow-y-auto bg-gradient-to-b from-slate-50 to-white px-6 pb-6 pt-5"
+  >
+    <div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
       @for (stat of stats; track stat.label) {
-        <div class="tl-stat">
-          <div class="tl-stat-label">{{ stat.label }}</div>
+        <div
+          class="min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md"
+          [ngClass]="{
+            'border-t-4 !border-t-emerald-400': stat.badge === 'success',
+            'border-t-4 !border-t-amber-400': stat.badge === 'warning',
+            'border-t-4 !border-t-indigo-400': stat.badge !== 'success' && stat.badge !== 'warning'
+          }"
+        >
+          <div class="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.05em] text-slate-500">
+            {{ stat.label }}
+          </div>
+
           @if (stat.badge) {
-            <span class="tl-pill" [ngClass]="stat.badge">{{ stat.value }}</span>
+            <span
+              class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[0.78rem] font-semibold"
+              [ngClass]="{
+                'bg-emerald-50 text-emerald-700 border-emerald-200': stat.badge === 'success',
+                'bg-amber-50 text-amber-700 border-amber-200': stat.badge === 'warning',
+                'bg-slate-100 text-slate-600 border-slate-200': stat.badge === 'neutral'
+              }"
+            >
+              <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+              {{ stat.value }}
+            </span>
           } @else {
-            <div class="tl-stat-value">{{ stat.value }}</div>
+            <div class="break-all text-[0.95rem] font-semibold text-slate-900">
+              {{ stat.value }}
+            </div>
           }
         </div>
       }
     </div>
 
-    <div class="tl-counts">
+    <div class="mb-6 flex flex-wrap gap-2">
       @for (c of counts; track c.label) {
-        <span class="tl-count">{{ c.label }} <strong>{{ c.value }}</strong></span>
+        <span
+          class="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[0.78rem] text-indigo-700"
+        >
+          {{ c.label }}
+          <strong
+            class="rounded-full bg-indigo-600 px-2 py-px text-[0.72rem] font-bold text-white"
+            >{{ c.value }}</strong
+          >
+        </span>
       }
     </div>
 
-    <!-- Activity -->
-    <h6 class="tl-section-title">Activity</h6>
-    <ol class="tl-list">
-      @for (ev of events; track ev.step) {
-        <li class="tl-item">
-          <span class="tl-icon" [ngClass]="ev.tone">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
-                 stroke="currentColor">
+    @if (events.length) {
+      <h6 class="m-0 mb-3 text-[0.8rem] font-bold uppercase tracking-[0.06em] text-slate-600">
+        Process Overview
+      </h6>
+
+      <div class="mb-7 overflow-x-auto pb-2">
+        <div class="flex min-w-max items-stretch pl-2">
+          @for (ev of events; track ev.step; let i = $index) {
+            <div
+              class="-ml-2 flex h-14 min-w-[130px] max-w-[170px] flex-col justify-center px-6 text-white first:ml-0"
+              style="
+                clip-path: polygon(
+                  0 0,
+                  calc(100% - 16px) 0,
+                  100% 50%,
+                  calc(100% - 16px) 100%,
+                  0 100%,
+                  16px 50%
+                );
+              "
+              [ngClass]="{
+                'bg-blue-500': ev.tone === 'tone-blue',
+                'bg-indigo-500': ev.tone === 'tone-indigo',
+                'bg-emerald-500': ev.tone === 'tone-emerald',
+                'bg-purple-500': ev.tone === 'tone-purple',
+                'bg-amber-500': ev.tone === 'tone-amber',
+                'bg-slate-500': ev.tone === 'tone-slate'
+              }"
+            >
+              <span class="text-[0.62rem] font-semibold uppercase tracking-wider text-white/75"
+                >Step {{ i + 1 }}</span
+              >
+              <span class="truncate text-[0.78rem] font-semibold leading-tight" [title]="ev.title">{{
+                ev.title
+              }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <h6 class="m-0 mb-4 text-[0.8rem] font-bold uppercase tracking-[0.06em] text-slate-600">
+      Activity
+    </h6>
+
+    <ol class="m-0 list-none p-0">
+      @for (ev of events; track ev.step; let last = $last) {
+        <li class="relative flex gap-4 pb-5 last:pb-0">
+          @if (!last) {
+            <span
+              class="absolute bottom-0 left-[19px] top-[42px] w-0.5 rounded bg-gradient-to-b from-indigo-300 to-slate-200"
+            ></span>
+          }
+
+          <span
+            class="relative z-10 flex h-10 w-10 flex-none items-center justify-center rounded-full border-[3px] border-white shadow-md"
+            [ngClass]="{
+              'bg-gradient-to-br from-blue-400 to-blue-600 text-white': ev.tone === 'tone-blue',
+              'bg-gradient-to-br from-indigo-400 to-indigo-600 text-white':
+                ev.tone === 'tone-indigo',
+              'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white':
+                ev.tone === 'tone-emerald',
+              'bg-gradient-to-br from-purple-400 to-purple-600 text-white':
+                ev.tone === 'tone-purple',
+              'bg-gradient-to-br from-amber-400 to-orange-500 text-white':
+                ev.tone === 'tone-amber',
+              'bg-gradient-to-br from-slate-400 to-slate-600 text-white': ev.tone === 'tone-slate'
+            }"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-[18px] w-[18px]"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.8"
+              stroke="currentColor"
+            >
               <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="ev.icon" />
             </svg>
           </span>
 
-          <div class="tl-card">
-            <div class="tl-card-head">
-              <span class="tl-title">{{ ev.title }}</span>
-              <span class="tl-time">{{ ev.at }}</span>
+          <div
+            class="min-w-0 flex-1 rounded-xl border border-slate-200 border-l-4 bg-white px-4 py-3 shadow-sm transition-all hover:-translate-y-px hover:shadow-md"
+            [ngClass]="{
+              '!border-l-blue-500': ev.tone === 'tone-blue',
+              '!border-l-indigo-500': ev.tone === 'tone-indigo',
+              '!border-l-emerald-500': ev.tone === 'tone-emerald',
+              '!border-l-purple-500': ev.tone === 'tone-purple',
+              '!border-l-amber-500': ev.tone === 'tone-amber',
+              '!border-l-slate-400': ev.tone === 'tone-slate'
+            }"
+          >
+            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <span class="text-[0.95rem] font-semibold text-slate-900">{{ ev.title }}</span>
+
+              <span
+                class="whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-0.5 text-[0.74rem] font-medium text-slate-600"
+              >
+                {{ ev.at }}
+              </span>
             </div>
 
-            <div class="tl-meta">
-              By <strong>{{ ev.by }}</strong>
+            <div class="mt-1.5 text-[0.82rem] text-slate-600">
+              By
+              <strong class="font-semibold text-slate-800">{{ ev.by }}</strong>
+
               @if (ev.email) {
-                <span class="tl-email">{{ ev.email }}</span>
+                <span class="ml-1.5 text-slate-400">{{ ev.email }}</span>
               }
             </div>
 
             @if (ev.chips.length) {
-              <div class="tl-chips">
+              <div class="mt-2.5 flex flex-wrap gap-1.5">
                 @for (chip of ev.chips; track chip.label) {
-                  <span class="tl-chip"><span>{{ chip.label }}</span>{{ chip.value }}</span>
+                  <span
+                    class="break-all rounded-md border border-indigo-100 bg-indigo-50/70 px-2 py-0.5 text-[0.75rem] text-slate-700"
+                  >
+                    <span class="mr-1 font-medium text-indigo-500">{{ chip.label }}</span>
+                    {{ chip.value }}
+                  </span>
                 }
               </div>
             }
 
             @if (ev.since) {
-              <div class="tl-since">{{ ev.since }} after the previous step</div>
+              <div class="mt-2.5 flex items-center gap-1.5 text-[0.75rem] text-slate-400">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="2"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                {{ ev.since }} after the previous step
+              </div>
             }
           </div>
         </li>
       } @empty {
-        <li class="tl-empty">No activity has been recorded for this project yet.</li>
+        <li class="py-6 text-center text-sm text-slate-500">
+          No activity has been recorded for this project yet.
+        </li>
       }
     </ol>
 
     @if (summary?.history_reconstructed) {
-      <p class="tl-note">
-        Part of this history was reconstructed from existing records, so some steps may not show an exact processing time.
+      <p
+        class="mb-0 mt-5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[0.75rem] text-amber-700"
+      >
+        Part of this history was reconstructed from existing records, so some steps may not show an
+        exact processing time.
       </p>
     }
   </div>
 }
 
-<div class="tl-footer">
-  <span class="tl-tz">All times are shown in {{ timezone }}</span>
+<div
+  class="flex items-center justify-between gap-4 rounded-b-[0.5rem] border-t border-slate-200 bg-white px-6 py-3"
+>
+  <span class="text-[0.78rem] text-slate-500">All times are shown in {{ timezone }}</span>
+
   <button type="button" class="btn btn-outline-secondary" (click)="close()">Close</button>
 </div>
