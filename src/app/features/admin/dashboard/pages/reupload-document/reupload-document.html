@@ -8,18 +8,12 @@
 <div class="modal-body">
   <form [formGroup]="documentForm" (ngSubmit)="onSubmit($event)">
     <div class="row">
-      <div class="col-md-6 mb-2">
+      <div class="col-md-6 mb-3">
         <label class="form-label">Project Name</label>
-        <input
-          type="text"
-          class="form-control"
-          [value]="editData?.name || ''"
-          readonly
-          disabled
-        />
+        <input type="text" class="form-control" [value]="editData?.name || ''" readonly disabled />
       </div>
 
-      <div class="col-md-6 mb-2">
+      <div class="col-md-6 mb-3">
         <label class="form-label">Client Name</label>
         <input
           type="text"
@@ -29,66 +23,67 @@
           disabled
         />
       </div>
-
-      <div class="col-md-8 offset-md-2 mb-2">
-        <label class="form-label">Document <span class="text-danger">*</span></label>
-        <div
-          class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:border-indigo-400 transition-colors cursor-pointer"
-          [ngClass]="{
-            'border-indigo-500 bg-indigo-50': isDragging(),
-          }"
-          (dragover)="onDragOver($event)"
-          (dragleave)="onDragLeave($event)"
-          (drop)="onDrop($event)"
-          (click)="documentInput.click()"
-        >
-          <input
-            #documentInput
-            type="file"
-            (change)="onFileSelected($event)"
-            class="hidden"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg"
-          />
-
-          @if (documentFileLoading()) {
-            <span
-              class="spinner-border spinner-border-sm text-indigo-600 mb-2"
-              role="status"
-              aria-hidden="true"
-            ></span>
-            <p class="text-sm text-slate-600">Loading file...</p>
-          } @else if (!selectedDocument()) {
-            <i class="fas fa-file-upload fa-2x text-slate-400 mb-2"></i>
-            <p class="text-sm text-slate-600">
-              <span class="text-indigo-600 font-medium">Browse</span> or drop your document here
-            </p>
-            <p class="text-xs text-slate-400 mt-1">
-              Supported: PDF, Word, Excel, PowerPoint, Images
-            </p>
-          } @else {
-            <i class="fas fa-file-upload fa-2x text-slate-400 mb-2"></i>
-            <div class="flex items-center justify-center gap-3">
-              <span class="text-sm font-medium text-slate-700">{{ selectedDocument()?.name }}</span>
-              <span class="text-xs text-slate-500"
-                >({{ formatFileSize(selectedDocument()?.size || 0) }})</span
-              >
-              <button
-                type="button"
-                class="text-red-500 hover:text-red-700"
-                (click)="removeFile($event)"
-              >
-                <i class="fa fa-times"></i>
-              </button>
-            </div>
-          }
-        </div>
-        @if (documentForm.get('document')?.touched && documentForm.get('document')?.invalid) {
-          <div class="text-danger">
-            <div>Document is required</div>
-          </div>
-        }
-      </div>
     </div>
+
+    <div class="row">
+      @for (field of uploadFields; track field.key) {
+        <div class="col-md-6 mb-3">
+          <label class="form-label">
+            {{ field.label }}
+          </label>
+
+          <div
+            class="border-2 border-dashed rounded-xl p-3 text-center hover:border-indigo-400 transition-colors cursor-pointer"
+            [ngClass]="{
+              'border-slate-300': draggingKey() !== field.key,
+              'border-indigo-500 bg-indigo-50': draggingKey() === field.key,
+            }"
+            (dragover)="onDragOver($event, field.key)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event, field.key)"
+            (click)="fileInput.click()"
+          >
+            <input
+              #fileInput
+              type="file"
+              class="hidden"
+              [accept]="field.accept"
+              (change)="onFileSelected($event, field.key)"
+            />
+
+            @if (!selectedFiles()[field.key]) {
+              <i class="fas fa-file-upload fa-lg text-slate-400 mb-1"></i>
+              <p class="text-sm text-slate-600 mb-0">
+                <span class="text-indigo-600 font-medium">Browse</span> or drop file here
+              </p>
+              <p class="text-xs text-slate-400 mt-1 mb-0">{{ field.hint }}</p>
+            } @else {
+              <i class="fas fa-file-upload fa-lg text-slate-400 mb-1"></i>
+              <div class="flex items-center justify-center gap-2">
+                <span class="text-sm font-medium text-slate-700 truncate max-w-[160px]">{{
+                  selectedFiles()[field.key]?.name
+                }}</span>
+                <span class="text-xs text-slate-500"
+                  >({{ formatFileSize(selectedFiles()[field.key]?.size || 0) }})</span
+                >
+                <button
+                  type="button"
+                  class="text-red-500 hover:text-red-700"
+                  (click)="removeFile($event, field.key)"
+                >
+                  <i class="fa fa-times"></i>
+                </button>
+              </div>
+            }
+          </div>
+
+        </div>
+      }
+    </div>
+
+    @if (showNoFileError()) {
+      <div class="text-danger mb-2">Please select at least one file to re-upload</div>
+    }
 
     <div class="footer">
       <div class="button-container">
