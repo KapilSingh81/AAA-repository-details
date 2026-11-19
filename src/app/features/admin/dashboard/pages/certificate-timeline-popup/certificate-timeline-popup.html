@@ -1,9 +1,9 @@
 <div
-  class="modal-header !items-start !border-0 !px-6 !py-5 !text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 rounded-t-[0.5rem]"
+  class="modal-header !items-start !border-b !border-slate-200 !px-6 !py-5 bg-gradient-to-r from-indigo-50 via-white to-sky-50 rounded-t-[0.5rem]"
 >
   <div class="flex items-center gap-3">
     <span
-      class="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30"
+      class="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 ring-1 ring-indigo-200"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -21,19 +21,21 @@
       </svg>
     </span>
     <div>
-      <h5 class="modal-title mb-0 !text-lg !font-bold !text-white">Certificate Timeline</h5>
+      <h5 class="modal-title mb-0 !text-lg !font-semibold !tracking-tight !text-slate-900">
+        Certificate Timeline
+      </h5>
       @if (summary) {
-        <div class="mt-0.5 text-[0.85rem] text-white/80">
+        <div class="mt-0.5 text-[0.85rem] text-slate-500">
           {{ summary.project_name }}
           @if (summary.client_name) {
-            <span class="mx-1.5 text-white/50">•</span>{{ summary.client_name }}
+            <span class="mx-1.5 text-slate-300">•</span>{{ summary.client_name }}
           }
         </div>
       }
     </div>
   </div>
 
-  <button type="button" class="btn-close btn-close-white" (click)="close()"></button>
+  <button type="button" class="btn-close" (click)="close()"></button>
 </div>
 
 @if (isLoading) {
@@ -48,20 +50,18 @@
     <button type="button" class="btn btn-outline-primary btn-sm" (click)="load()">Retry</button>
   </div>
 } @else {
-  <div
-    class="max-h-[calc(100vh-240px)] overflow-y-auto bg-gradient-to-b from-slate-50 to-white px-6 pb-6 pt-5"
-  >
+  <div class="max-h-[calc(100vh-240px)] overflow-y-auto bg-slate-50 px-6 pb-6 pt-5">
     <div class="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
       @for (stat of stats; track stat.label) {
         <div
-          class="min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md"
+          class="min-w-0 rounded-xl border border-t-2 border-slate-200 bg-white px-4 py-3 shadow-sm"
           [ngClass]="{
-            'border-t-4 !border-t-emerald-400': stat.badge === 'success',
-            'border-t-4 !border-t-amber-400': stat.badge === 'warning',
-            'border-t-4 !border-t-indigo-400': stat.badge !== 'success' && stat.badge !== 'warning'
+            '!border-t-emerald-500': stat.badge === 'success',
+            '!border-t-amber-500': stat.badge === 'warning',
+            '!border-t-slate-300': stat.badge !== 'success' && stat.badge !== 'warning'
           }"
         >
-          <div class="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.05em] text-slate-500">
+          <div class="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.06em] text-slate-500">
             {{ stat.label }}
           </div>
 
@@ -89,19 +89,18 @@
     <div class="mb-6 flex flex-wrap gap-2">
       @for (c of counts; track c.label) {
         <span
-          class="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-[0.78rem] text-indigo-700"
+          class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[0.78rem] text-slate-600"
         >
           {{ c.label }}
-          <strong
-            class="rounded-full bg-indigo-600 px-2 py-px text-[0.72rem] font-bold text-white"
-            >{{ c.value }}</strong
-          >
+          <strong class="rounded-full bg-slate-100 px-2 py-px text-[0.72rem] font-bold text-slate-800">{{
+            c.value
+          }}</strong>
         </span>
       }
     </div>
 
     @if (events.length) {
-      <h6 class="m-0 mb-3 text-[0.8rem] font-bold uppercase tracking-[0.06em] text-slate-600">
+      <h6 class="m-0 mb-3 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-slate-500">
         Process Overview
       </h6>
 
@@ -109,27 +108,17 @@
         <div class="flex min-w-max items-stretch pl-2">
           @for (ev of events; track ev.step; let i = $index) {
             <div
-              class="-ml-2 flex h-14 min-w-[130px] max-w-[170px] flex-col justify-center px-6 text-white first:ml-0"
-              style="
-                clip-path: polygon(
-                  0 0,
-                  calc(100% - 16px) 0,
-                  100% 50%,
-                  calc(100% - 16px) 100%,
-                  0 100%,
-                  16px 50%
-                );
-              "
+              class="-ml-2 flex h-14 min-w-[130px] max-w-[170px] flex-col justify-center px-6 text-white first:ml-0 [clip-path:polygon(0_0,calc(100%_-_16px)_0,100%_50%,calc(100%_-_16px)_100%,0_100%,16px_50%)]"
               [ngClass]="{
                 'bg-blue-500': ev.tone === 'tone-blue',
                 'bg-indigo-500': ev.tone === 'tone-indigo',
                 'bg-emerald-500': ev.tone === 'tone-emerald',
-                'bg-purple-500': ev.tone === 'tone-purple',
+                'bg-violet-500': ev.tone === 'tone-purple',
                 'bg-amber-500': ev.tone === 'tone-amber',
-                'bg-slate-500': ev.tone === 'tone-slate'
+                'bg-slate-400': ev.tone === 'tone-slate'
               }"
             >
-              <span class="text-[0.62rem] font-semibold uppercase tracking-wider text-white/75"
+              <span class="text-[0.62rem] font-semibold uppercase tracking-wider text-white/70"
                 >Step {{ i + 1 }}</span
               >
               <span class="truncate text-[0.78rem] font-semibold leading-tight" [title]="ev.title">{{
@@ -141,7 +130,7 @@
       </div>
     }
 
-    <h6 class="m-0 mb-4 text-[0.8rem] font-bold uppercase tracking-[0.06em] text-slate-600">
+    <h6 class="m-0 mb-4 text-[0.75rem] font-semibold uppercase tracking-[0.08em] text-slate-500">
       Activity
     </h6>
 
@@ -149,24 +138,18 @@
       @for (ev of events; track ev.step; let last = $last) {
         <li class="relative flex gap-4 pb-5 last:pb-0">
           @if (!last) {
-            <span
-              class="absolute bottom-0 left-[19px] top-[42px] w-0.5 rounded bg-gradient-to-b from-indigo-300 to-slate-200"
-            ></span>
+            <span class="absolute bottom-0 left-[19px] top-[42px] w-px bg-slate-200"></span>
           }
 
           <span
-            class="relative z-10 flex h-10 w-10 flex-none items-center justify-center rounded-full border-[3px] border-white shadow-md"
+            class="relative z-10 flex h-10 w-10 flex-none items-center justify-center rounded-full border-2 border-white shadow-sm ring-1"
             [ngClass]="{
-              'bg-gradient-to-br from-blue-400 to-blue-600 text-white': ev.tone === 'tone-blue',
-              'bg-gradient-to-br from-indigo-400 to-indigo-600 text-white':
-                ev.tone === 'tone-indigo',
-              'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white':
-                ev.tone === 'tone-emerald',
-              'bg-gradient-to-br from-purple-400 to-purple-600 text-white':
-                ev.tone === 'tone-purple',
-              'bg-gradient-to-br from-amber-400 to-orange-500 text-white':
-                ev.tone === 'tone-amber',
-              'bg-gradient-to-br from-slate-400 to-slate-600 text-white': ev.tone === 'tone-slate'
+              'bg-blue-50 text-blue-600 ring-blue-200': ev.tone === 'tone-blue',
+              'bg-indigo-50 text-indigo-600 ring-indigo-200': ev.tone === 'tone-indigo',
+              'bg-emerald-50 text-emerald-600 ring-emerald-200': ev.tone === 'tone-emerald',
+              'bg-violet-50 text-violet-600 ring-violet-200': ev.tone === 'tone-purple',
+              'bg-amber-50 text-amber-600 ring-amber-200': ev.tone === 'tone-amber',
+              'bg-slate-100 text-slate-600 ring-slate-200': ev.tone === 'tone-slate'
             }"
           >
             <svg
@@ -182,21 +165,21 @@
           </span>
 
           <div
-            class="min-w-0 flex-1 rounded-xl border border-slate-200 border-l-4 bg-white px-4 py-3 shadow-sm transition-all hover:-translate-y-px hover:shadow-md"
+            class="min-w-0 flex-1 rounded-xl border border-l-4 border-slate-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md"
             [ngClass]="{
               '!border-l-blue-500': ev.tone === 'tone-blue',
               '!border-l-indigo-500': ev.tone === 'tone-indigo',
               '!border-l-emerald-500': ev.tone === 'tone-emerald',
-              '!border-l-purple-500': ev.tone === 'tone-purple',
+              '!border-l-violet-500': ev.tone === 'tone-purple',
               '!border-l-amber-500': ev.tone === 'tone-amber',
-              '!border-l-slate-400': ev.tone === 'tone-slate'
+              '!border-l-slate-300': ev.tone === 'tone-slate'
             }"
           >
             <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <span class="text-[0.95rem] font-semibold text-slate-900">{{ ev.title }}</span>
 
               <span
-                class="whitespace-nowrap rounded-full bg-slate-100 px-2.5 py-0.5 text-[0.74rem] font-medium text-slate-600"
+                class="whitespace-nowrap rounded-md bg-slate-100 px-2.5 py-0.5 text-[0.74rem] font-medium text-slate-600"
               >
                 {{ ev.at }}
               </span>
@@ -215,9 +198,9 @@
               <div class="mt-2.5 flex flex-wrap gap-1.5">
                 @for (chip of ev.chips; track chip.label) {
                   <span
-                    class="break-all rounded-md border border-indigo-100 bg-indigo-50/70 px-2 py-0.5 text-[0.75rem] text-slate-700"
+                    class="break-all rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[0.75rem] text-slate-700"
                   >
-                    <span class="mr-1 font-medium text-indigo-500">{{ chip.label }}</span>
+                    <span class="mr-1 font-medium text-slate-500">{{ chip.label }}</span>
                     {{ chip.value }}
                   </span>
                 }
@@ -254,7 +237,7 @@
 
     @if (summary?.history_reconstructed) {
       <p
-        class="mb-0 mt-5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[0.75rem] text-amber-700"
+        class="mb-0 mt-5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[0.75rem] text-amber-800"
       >
         Part of this history was reconstructed from existing records, so some steps may not show an
         exact processing time.

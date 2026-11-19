@@ -15,6 +15,14 @@ import { CommonService } from '../../../../shared/services/common-services/commo
 import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
 import { DocumentService } from '../../services/document-service';
 
+interface UploadField {
+  key: 'document' | 'questionnaire' | 'exception_file' | 'email_approval';
+  label: string;
+  required: boolean;
+  accept: string;
+  hint: string;
+}
+
 @Component({
   selector: 'app-add-docment',
   imports: [ReactiveFormsModule, CommonModule],
@@ -32,16 +40,54 @@ export class AddDocment implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   isLoading = signal(false);
-  isDragging = signal(false);
-  documentFileLoading = signal(false);
-  selectedDocument = signal<File | null>(null);
+  draggingKey = signal<string | null>(null);
+  selectedFiles = signal<Record<string, File | null>>({
+    document: null,
+    questionnaire: null,
+    exception_file: null,
+    email_approval: null,
+  });
   documentTypeList: any;
+
+  uploadFields: UploadField[] = [
+    {
+      key: 'document',
+      label: 'Document',
+      required: true,
+      accept: '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg',
+      hint: 'PDF, Word, Excel, PowerPoint, Images',
+    },
+    {
+      key: 'questionnaire',
+      label: 'Questionnaire',
+      required: false,
+      accept: '.xls,.xlsx',
+      hint: 'Excel only (.xls, .xlsx)',
+    },
+    {
+      key: 'exception_file',
+      label: 'Exception File',
+      required: false,
+      accept: '.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg',
+      hint: 'PDF, Word, Excel, Images',
+    },
+    {
+      key: 'email_approval',
+      label: 'Email Approval',
+      required: false,
+      accept: '.pdf,.doc,.docx,.png,.jpg,.jpeg,.eml,.msg',
+      hint: 'PDF, Word, Images, Email (.eml, .msg)',
+    },
+  ];
 
   documentForm: FormGroup = this.fb.group({
     project_name: ['', [Validators.required, Validators.minLength(3)]],
     client_name: ['', [Validators.required, Validators.minLength(3)]],
     type: ['', Validators.required],
     document: ['', Validators.required],
+    questionnaire: [''],
+    exception_file: [''],
+    email_approval: [''],
   });
 
   ngOnInit() {
@@ -60,65 +106,59 @@ export class AddDocment implements OnInit {
     this.modalService.hide();
   }
 
-  onDragOver(event: DragEvent) {
+  onDragOver(event: DragEvent, key: string) {
     event.preventDefault();
     event.stopPropagation();
-    this.isDragging.set(true);
+    this.draggingKey.set(key);
   }
 
   onDragLeave(event: DragEvent) {
     event.preventDefault();
     event.stopPropagation();
-    this.isDragging.set(false);
+    this.draggingKey.set(null);
   }
 
-  onDrop(event: DragEvent) {
+  onDrop(event: DragEvent, key: string) {
     event.preventDefault();
     event.stopPropagation();
-    this.isDragging.set(false);
+    this.draggingKey.set(null);
 
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
-      this.handleFileSelection(files[0]);
+      this.handleFileSelection(key, files[0]);
     }
   }
 
-  onFileSelected(event: Event) {
+  onFileSelected(event: Event, key: string) {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      this.handleFileSelection(input.files[0]);
+      this.handleFileSelection(key, input.files[0]);
     }
     input.value = '';
   }
 
-  handleFileSelection(file: File) {
-    this.documentFileLoading.set(true);
+  handleFileSelection(key: string, file: File) {
+    const field = this.uploadFields.find((f) => f.key === key);
+    const extension = '.' + (file.name.split('.').pop() || '').toLowerCase();
 
-    const reader = new FileReader();
+    if (field && !field.accept.split(',').includes(extension)) {
+      this.notificationService.error(`${field.label}: only ${field.hint} allowed.`);
+      return;
+    }
 
-    reader.onload = () => {
-      this.selectedDocument.set(file);
-      this.documentForm.patchValue({ document: file.name });
-      this.documentForm.get('document')?.markAsTouched();
-      this.documentForm.get('document')?.setErrors(null);
-      this.documentFileLoading.set(false);
-      this.cdr.detectChanges();
-    };
-
-    reader.onerror = () => {
-      this.documentFileLoading.set(false);
-      this.notificationService.error('Failed to read file. Please try again.');
-    };
-
-    reader.readAsArrayBuffer(file);
+    this.setFile(key, file);
   }
 
-  removeFile(event: Event) {
+  removeFile(event: Event, key: string) {
     event.stopPropagation();
-    this.selectedDocument.set(null);
-    this.documentForm.patchValue({ document: '' });
-    this.documentForm.get('document')?.markAsTouched();
-    this.documentForm.get('document')?.setErrors({ required: true });
+    this.setFile(key, null);
+  }
+
+  private setFile(key: string, file: File | null) {
+    this.selectedFiles.update((files) => ({ ...files, [key]: file }));
+    const control = this.documentForm.get(key);
+    control?.patchValue(file ? file.name : '');
+    control?.markAsTouched();
   }
 
   formatFileSize(size: number): string {
@@ -134,10 +174,6 @@ export class AddDocment implements OnInit {
       this.documentForm.get(key)?.markAsTouched();
     });
 
-    if (!this.selectedDocument()) {
-      this.documentForm.get('document')?.setErrors({ required: true });
-    }
-
     if (this.documentForm.invalid) {
       return;
     }
@@ -148,7 +184,13 @@ export class AddDocment implements OnInit {
     formData.append('project_name', this.documentForm.get('project_name')?.value);
     formData.append('client_name', this.documentForm.get('client_name')?.value);
     formData.append('type', this.documentForm.get('type')?.value);
-    formData.append('document', this.selectedDocument()!);
+
+    this.uploadFields.forEach((field) => {
+      const file = this.selectedFiles()[field.key];
+      if (file) {
+        formData.append(field.key, file);
+      }
+    });
 
     this.documentService
       .addUploadDoumnet(formData)
@@ -160,12 +202,14 @@ export class AddDocment implements OnInit {
             this.modalService.hide();
             this.mapdata.emit();
           } else {
-            this.notificationService.error(res?.body?.message || 'Upload failed');
+            this.notificationService.error(
+              res?.body?.message || res?.error?.message || 'Upload failed',
+            );
           }
         },
         error: (err) => {
           console.error('Upload error:', err);
-          this.notificationService.error('Upload failed. Please try again.');
+          this.notificationService.error(err?.error?.message || 'Upload failed. Please try again.');
         },
       });
   }

@@ -1,4 +1,3 @@
-
 <div class="modal-header">
   <h5 class="modal-title">
     {{ isRegenerate ? 'Regenerate Certificate' : 'Finalize Document' }}
@@ -66,14 +65,94 @@
 } @else {
   <div class="max-h-[calc(100vh-230px)] overflow-y-auto px-6 py-5 bg-slate-50">
 
-    @if (usingFallback) {
+    @if (hasMissingDocs) {
+      <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div
+          class="flex items-start gap-3 border-b border-slate-200 bg-gradient-to-r from-amber-50 via-white to-white px-5 py-4">
+          <span
+            class="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-amber-100 text-amber-600 ring-1 ring-amber-200">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.8"
+              stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h6 class="m-0 text-[0.95rem] font-semibold text-slate-900">
+              Documents required to {{ isRegenerate ? 'regenerate' : 'finalize' }}
+            </h6>
+            <p class="mb-0 mt-0.5 text-[0.82rem] text-slate-500">
+              {{ missingDocs.length }} pending. Upload all documents to continue.
+            </p>
+          </div>
+        </div>
+
+        <ul class="m-0 list-none divide-y divide-slate-100 p-0">
+          @for (doc of missingDocs; track doc.label) {
+            <li class="flex items-center justify-between gap-3 px-5 py-3">
+              <div class="flex min-w-0 items-center gap-3">
+                <span
+                  class="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-[18px] w-[18px]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="1.6"
+                    stroke="currentColor">
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                </span>
+                <span class="truncate text-[0.9rem] font-medium text-slate-800">{{ doc.label }}</span>
+              </div>
+
+              <span
+                class="inline-flex flex-none items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[0.74rem] font-semibold text-amber-700">
+                <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
+                Pending
+              </span>
+            </li>
+          }
+        </ul>
+
+        <div
+          class="flex items-center gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3 text-[0.8rem] text-slate-500">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 flex-none text-indigo-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.8"
+            stroke="currentColor">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+          </svg>
+          Use <strong class="font-semibold text-slate-700">Re-upload</strong> from the actions menu to
+          add these files.
+        </div>
+      </div>
+    }
+
+    @if (usingFallback && !hasMissingDocs) {
       <div class="alert alert-info small">
         No new changes were found in this report since it was finalized.
         Edit any details you want to change; fields left empty will not be submitted.
       </div>
     }
 
-    @if (notFoundRows.length) {
+    @if (!hasMissingDocs && notFoundRows.length) {
       <div class="bg-white border border-gray-200 rounded-xl p-5 mb-4">
         <div class="flex items-center justify-between mb-4">
           <h6 class="text-base font-semibold text-slate-900 m-0">
@@ -96,7 +175,7 @@
       </div>
     }
 
-    @if (foundRows.length) {
+    @if (!hasMissingDocs && foundRows.length) {
       <div class="bg-white border border-gray-200 rounded-xl p-5 mb-4 last:mb-0">
         <div class="flex items-center justify-between mb-4">
           <h6 class="text-base font-semibold text-slate-900 m-0">
@@ -122,20 +201,24 @@
 }
 
 <div class="flex items-center justify-between gap-4 px-6 py-3.5 border-t border-gray-200">
-  <div class="form-check mb-0">
-    <input
-      class="form-check-input"
-      type="checkbox"
-      id="confirmFinalize"
-      [formControl]="confirmed"
-      [attr.disabled]="isLoading || !!loadError ? true : null" />
+  @if (!hasMissingDocs) {
+    <div class="form-check mb-0">
+      <input
+        class="form-check-input"
+        type="checkbox"
+        id="confirmFinalize"
+        [formControl]="confirmed"
+        [attr.disabled]="isLoading || !!loadError || hasMissingDocs ? true : null" />
 
-    <label class="form-check-label text-sm" for="confirmFinalize">
-      {{ isRegenerate
-        ? 'I confirm the above details are correct and want to regenerate the certificate.'
-        : 'I confirm the above details are correct and want to finalize this document.' }}
-    </label>
-  </div>
+      <label class="form-check-label text-sm" for="confirmFinalize">
+        {{ isRegenerate
+          ? 'I confirm the above details are correct and want to regenerate the certificate.'
+          : 'I confirm the above details are correct and want to finalize this document.' }}
+      </label>
+    </div>
+  } @else {
+    <span></span>
+  }
 
   <div class="flex gap-2 shrink-0">
     <button
@@ -148,7 +231,7 @@
     <button
       type="button"
       class="btn btn-primary"
-      [disabled]="isLoading || !!loadError || isSubmitting"
+      [disabled]="isLoading || !!loadError || isSubmitting || hasMissingDocs"
       (click)="onSubmit()">
       @if (isSubmitting) {
         <span class="spinner-border spinner-border-sm me-1"></span>
