@@ -22,11 +22,11 @@ import { AddDocment } from '../../components/add-docment/add-docment';
 import { DocumentEvidance } from '../../components/document-evidance/document-evidance';
 import { GenerateCertificate } from '../../components/generate-certificate/generate-certificate';
 import { GenerateProjectPopup } from '../../components/generate-project-popup/generate-project-popup';
-// import { ReuploadDocument } from '../../components/reupload-document/reupload-document';
 import { DocumentService } from '../../services/document-service';
 import { CertificateTimelinePopup } from '../certificate-timeline-popup/certificate-timeline-popup';
 import { FinalizeDocumentPopup } from '../finalize-document-popup/finalize-document-popup';
 import { ReuploadDocument } from '../reupload-document/reupload-document';
+import { SigningAssetsPopup } from '../signing-assets-popup/signing-assets-popup';
 
 interface Document {
   id: string;
@@ -35,6 +35,7 @@ interface Document {
   audit_type: string;
   report_download_url: string;
   certificate_download_url: string;
+  certificate_id?: string;
   created_at: string;
   is_generated: boolean;
   can_finalize?: boolean;
@@ -414,6 +415,10 @@ export class ManageDashboard implements OnInit {
     return !!doc && doc.is_generated === false;
   }
 
+  canUploadSigningAssets(doc: Document | null): boolean {
+    return !!doc && (!!doc.certificate_id || !!doc.certificate_download_url);
+  }
+
   isAuthorized(): boolean {
     const token = this.cookieService.get('aaa-token');
     return !!(token && token.length > 0);
@@ -557,6 +562,27 @@ export class ManageDashboard implements OnInit {
       ReuploadDocument,
       Object.assign(initialState, {
         id: 'reupload-document',
+        class: 'modal-lg modal-dialog-centered alert-popup',
+      }),
+    );
+    this.bsModalRef?.content?.mapdata?.subscribe(() => {
+      this.getDocumentList();
+    });
+  }
+
+  onUploadSigningAssets(doc: Document) {
+    this.closeActionMenu();
+    this.cdr.detectChanges();
+
+    const initialState: ModalOptions = {
+      initialState: {
+        editData: doc,
+      },
+    };
+    this.bsModalRef = this.modalService.show(
+      SigningAssetsPopup,
+      Object.assign(initialState, {
+        id: 'signing-assets',
         class: 'modal-lg modal-dialog-centered alert-popup',
       }),
     );

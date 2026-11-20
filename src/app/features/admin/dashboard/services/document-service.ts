@@ -91,4 +91,9 @@ export class DocumentService {
     const url = API_CONSTANT.certificateTimeline.replace('{project_id}', projectId);
     return this.apiService.get(url);
   }
+
+  uploadSigningAssets(projectId: any, formData: FormData): Observable<any> {
+    const url = API_CONSTANT.uploadSigningAssets.replace('{project_id}', projectId);
+    return this.apiService.post(url, formData);
+  }
 }
