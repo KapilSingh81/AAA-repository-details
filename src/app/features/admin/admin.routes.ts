@@ -17,4 +17,9 @@ export const ROUTES: Routes = [
         path: 'project-details/:id',
         component: ProjectDetails,
     },
+    {
+    path: 'audit-review',
+    loadChildren: () =>
+        import('./audit-review/audit-review.routes').then((m) => m.AUDIT_REVIEW),
+},
 ];

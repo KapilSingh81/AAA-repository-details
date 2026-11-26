@@ -1,14 +1,18 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, Observable, of } from 'rxjs';
 import { API_CONSTANT } from '../../../shared/CONSTANT/API_CONSTANT';
 import { HttpService } from '../../../shared/services/http.services.ts/http.services';
+import { CookieService } from 'ngx-cookie-service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class DocumentService {
   private apiService = inject(HttpService);
+  private http = inject(HttpClient);
+  private cookieService = inject(CookieService);
+  private baseUrl = 'https://dms.aaatechnologies.co.in/api/';
 
   dashboardList(data: any): Observable<any> {
     const params: any = {
@@ -95,5 +99,26 @@ export class DocumentService {
   uploadSigningAssets(projectId: any, formData: FormData): Observable<any> {
     const url = API_CONSTANT.uploadSigningAssets.replace('{project_id}', projectId);
     return this.apiService.post(url, formData);
+  }
+
+  reportApproval(payload: any, projectId: any): Observable<any> {
+    const url = API_CONSTANT.reportApproval.replace('{project_id}', projectId);
+    return this.apiService.post(url, payload);
+  }
+
+  downloadReportPdf(reportId: string): Observable<HttpResponse<Blob>> {
+    const url = API_CONSTANT.downloadReportPdf.replace('{report_id}', reportId);
+    return this.downloadPdf(url);
+  }
+
+  downloadCertificatePdf(certId: string): Observable<HttpResponse<Blob>> {
+    const url = API_CONSTANT.downloadCertificatePdf.replace('{cert_id}', certId);
+    return this.downloadPdf(url);
+  }
+
+  private downloadPdf(path: string): Observable<HttpResponse<Blob>> {
+    const token = this.cookieService.get('aaa-token');
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+    return this.http.get(`${this.baseUrl}${path}`, { headers, observe: 'response', responseType: 'blob' });
   }
 }

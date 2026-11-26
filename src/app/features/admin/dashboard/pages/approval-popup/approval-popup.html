@@ -1,0 +1,127 @@
+<div class="!rounded-xl !bg-white !overflow-hidden">
+    <div
+        class="!flex !items-center !justify-between !px-5 !py-4 !border-b !border-slate-200 !bg-gradient-to-r !from-indigo-50 !via-white !to-sky-50">
+        <div class="!flex !items-center !gap-3">
+            <span
+                class="!flex !h-10 !w-10 !items-center !justify-center !rounded-xl !bg-indigo-100 !text-indigo-600 !ring-1 !ring-indigo-200">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                    stroke="currentColor" class="!w-5 !h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
+            </span>
+            <div>
+                <h2 class="!text-lg !font-semibold !text-slate-900 !mb-0">Report Approval</h2>
+                <p class="!text-sm !text-slate-500 !mb-0">Review the report before barcode upload</p>
+            </div>
+        </div>
+        <button type="button" (click)="onClose()" [disabled]="isSubmitting()"
+            class="!p-1 !text-slate-900 hover:!bg-slate-100 !rounded-lg disabled:!opacity-50">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5"
+                stroke="currentColor" class="!w-5 !h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="!p-5">
+        <div class="!grid !grid-cols-1 md:!grid-cols-2 !gap-x-6 !gap-y-4">
+            <div>
+                <label class="!block !text-sm !font-medium !text-slate-700 !mb-1.5">Project Name</label>
+                <input type="text" [value]="editData?.name || ''" readonly
+                    class="!w-full !rounded-md !border !border-slate-200 !bg-slate-100 !px-3 !py-2 !text-base !text-slate-800 !outline-none" />
+            </div>
+
+            <div>
+                <label class="!block !text-sm !font-medium !text-slate-700 !mb-1.5">Client Name</label>
+                <input type="text" [value]="editData?.client_name || ''" readonly
+                    class="!w-full !rounded-md !border !border-slate-200 !bg-slate-100 !px-3 !py-2 !text-base !text-slate-800 !outline-none" />
+            </div>
+
+            <div class="md:!col-span-2">
+                <label class="!block !text-sm !font-medium !text-slate-700 !mb-1.5">
+                    Decision <span class="!text-red-600">*</span>
+                </label>
+                <div class="!grid !grid-cols-1 sm:!grid-cols-2 !gap-3">
+                    @for (option of decisionOptions; track option.value) {
+                    <button type="button" (click)="selectDecision(option.value)" [disabled]="isSubmitting()"
+                        class="!flex !items-start !gap-3 !rounded-xl !border-2 !p-3 !text-left !transition-colors disabled:!opacity-60 disabled:!cursor-not-allowed"
+                        [ngClass]="{
+                            '!border-emerald-500 !bg-emerald-50': decision() === option.value && option.value === 'approve',
+                            '!border-red-500 !bg-red-50': decision() === option.value && option.value === 'reject',
+                            '!border-slate-200 hover:!border-slate-300 !bg-white': decision() !== option.value
+                        }">
+                        <span class="!flex !h-9 !w-9 !flex-none !items-center !justify-center !rounded-full" [ngClass]="
+                                option.value === 'approve'
+                                    ? '!bg-emerald-100 !text-emerald-600'
+                                    : '!bg-red-100 !text-red-600'
+                            ">
+                            @if (option.value === 'approve') {
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                stroke="currentColor" class="!w-5 !h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                            } @else {
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                stroke="currentColor" class="!w-5 !h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            }
+                        </span>
+                        <span class="!min-w-0">
+                            <span class="!block !text-base !font-semibold !text-slate-900">{{ option.label }}</span>
+                            <span class="!block !text-sm !text-slate-500">{{ option.hint }}</span>
+                        </span>
+                    </button>
+                    }
+                </div>
+            </div>
+
+            <div class="md:!col-span-2">
+                <label class="!flex !items-center !justify-between !text-sm !font-medium !text-slate-700 !mb-1.5">
+                    <span>
+                        Comment
+                        @if (decision() === 'reject') {
+                        <span class="!text-red-600">*</span>
+                        } @else {
+                        <span class="!font-normal !text-slate-400">(optional)</span>
+                        }
+                    </span>
+                    <span class="!text-xs !font-normal !text-slate-400">{{ comment().length }}/{{ maxCommentLength
+                        }}</span>
+                </label>
+                <textarea rows="4" [attr.maxlength]="maxCommentLength" [value]="comment()" (input)="onCommentInput($event)"
+                    [disabled]="isSubmitting()"
+                    [placeholder]="decision() === 'reject' ? 'Explain why this report is rejected' : 'Add a note for the report owner'"
+                    class="!w-full !rounded-md !border !border-slate-300 !px-3 !py-2 !text-base !text-slate-800 !outline-none focus:!border-indigo-500 focus:!ring-1 focus:!ring-indigo-500 !resize-y disabled:!bg-slate-100"></textarea>
+            </div>
+        </div>
+
+        @if (errorMessage()) {
+        <div
+            class="!mt-4 !flex !items-start !gap-2 !rounded-lg !border !border-red-200 !bg-red-50 !px-3 !py-2 !text-sm !text-red-700">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8"
+                stroke="currentColor" class="!w-5 !h-5 !shrink-0">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            <span>{{ errorMessage() }}</span>
+        </div>
+        }
+
+        <div class="!flex !items-center !justify-end !gap-3 !mt-5">
+            <button type="button" (click)="onClose()" [disabled]="isSubmitting()"
+                class="!px-4 !py-2 !text-base !font-medium !bg-white !text-slate-700 !border !border-slate-300 !rounded-md hover:!bg-slate-50 disabled:!opacity-50 disabled:!cursor-not-allowed">
+                Cancel
+            </button>
+            <button type="button" (click)="onSubmit()" [disabled]="isSubmitting() || !decision()"
+                class="!px-4 !py-2 !text-base !font-medium !text-white !rounded-md !flex !items-center !gap-2 disabled:!opacity-50 disabled:!cursor-not-allowed"
+                [ngClass]="decision() === 'reject' ? '!bg-red-600 hover:!bg-red-700' : '!bg-green-700 hover:!bg-green-800'">
+                @if (isSubmitting()) {
+                <span class="!animate-spin !rounded-full !h-4 !w-4 !border-b-2 !border-white"></span>
+                }
+                {{ decision() === 'reject' ? 'Reject Report' : decision() === 'approve' ? 'Approve Report' : 'Submit' }}
+            </button>
+        </div>
+    </div>
+</div>

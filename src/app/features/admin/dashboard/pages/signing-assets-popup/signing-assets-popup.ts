@@ -12,7 +12,6 @@ type AssetType = 'signature' | 'barcode';
   templateUrl: './signing-assets-popup.html',
 })
 export class SigningAssetsPopup {
-  @ViewChild('signatureInput') signatureInput?: ElementRef<HTMLInputElement>;
   @ViewChild('barcodeInput') barcodeInput?: ElementRef<HTMLInputElement>;
 
   private documentService = inject(DocumentService);
@@ -24,26 +23,13 @@ export class SigningAssetsPopup {
   editData: any;
   mapdata = new EventEmitter<boolean>();
 
-  signatureFile = signal<File | null>(null);
   barcodeFile = signal<File | null>(null);
-  isSignatureDragging = signal(false);
   isBarcodeDragging = signal(false);
   isSubmitting = signal(false);
-
-  onSignatureSelected(event: Event) {
-    const input = event.target as HTMLInputElement;
-    this.setFile('signature', input.files?.[0] || null);
-  }
 
   onBarcodeSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     this.setFile('barcode', input.files?.[0] || null);
-  }
-
-  onSignatureDrop(event: DragEvent) {
-    event.preventDefault();
-    this.isSignatureDragging.set(false);
-    this.setFile('signature', event.dataTransfer?.files?.[0] || null);
   }
 
   onBarcodeDrop(event: DragEvent) {
@@ -54,25 +40,15 @@ export class SigningAssetsPopup {
 
   onDragOver(event: DragEvent, type: AssetType) {
     event.preventDefault();
-    if (type === 'signature') {
-      this.isSignatureDragging.set(true);
-    } else {
+    if (type === 'barcode') {
       this.isBarcodeDragging.set(true);
     }
   }
 
   onDragLeave(type: AssetType) {
-    if (type === 'signature') {
-      this.isSignatureDragging.set(false);
-    } else {
+    if (type === 'barcode') {
       this.isBarcodeDragging.set(false);
     }
-  }
-
-  removeSignature(event: Event) {
-    event.stopPropagation();
-    this.signatureFile.set(null);
-    this.resetInput(this.signatureInput);
   }
 
   removeBarcode(event: Event) {
@@ -82,9 +58,7 @@ export class SigningAssetsPopup {
   }
 
   onClear() {
-    this.signatureFile.set(null);
     this.barcodeFile.set(null);
-    this.resetInput(this.signatureInput);
     this.resetInput(this.barcodeInput);
   }
 
@@ -94,15 +68,12 @@ export class SigningAssetsPopup {
       this.notification.error('Project id not found');
       return;
     }
-    if (!this.signatureFile() && !this.barcodeFile()) {
-      this.notification.error('Please select at least one file');
+    if (!this.barcodeFile()) {
+      this.notification.error('Please select a barcode / QR file');
       return;
     }
 
     const formData = new FormData();
-    if (this.signatureFile()) {
-      formData.append('signature', this.signatureFile() as File);
-    }
     if (this.barcodeFile()) {
       formData.append('barcode', this.barcodeFile() as File);
     }
@@ -111,13 +82,13 @@ export class SigningAssetsPopup {
     this.documentService.uploadSigningAssets(projectId, formData).subscribe({
       next: () => {
         this.isSubmitting.set(false);
-        this.notification.success('Signature / barcode uploaded successfully');
+        this.notification.success('Barcode uploaded successfully');
         this.mapdata.emit(true);
         this.bsModalRef.hide();
       },
       error: (err: any) => {
         this.isSubmitting.set(false);
-        this.notification.error(err?.error?.detail || 'Upload failed. Please try again.');
+        this.notification.error(this.getErrorMessage(err));
       },
     });
   }
@@ -131,15 +102,23 @@ export class SigningAssetsPopup {
 
     if (!this.allowedTypes.includes(file.type)) {
       this.notification.error('Only PNG or JPEG images are allowed');
-      this.resetInput(type === 'signature' ? this.signatureInput : this.barcodeInput);
+      this.resetInput(this.barcodeInput);
       return;
     }
 
-    if (type === 'signature') {
-      this.signatureFile.set(file);
-    } else {
+    if (type === 'barcode') {
       this.barcodeFile.set(file);
     }
+  }
+
+  private getErrorMessage(err: any): string {
+    const body = err?.error;
+    const detail = body?.detail;
+    return (
+      body?.message ||
+      (typeof detail === 'string' ? detail : detail?.message) ||
+      'Upload failed. Please try again.'
+    );
   }
 
   private resetInput(ref?: ElementRef<HTMLInputElement>) {

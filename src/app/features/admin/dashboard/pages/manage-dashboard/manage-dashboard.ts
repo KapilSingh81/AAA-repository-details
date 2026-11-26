@@ -10,6 +10,7 @@ import {
   signal,
   ViewChild,
 } from '@angular/core';
+import { HttpResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { BsModalRef, BsModalService, ModalOptions } from 'ngx-bootstrap/modal';
@@ -18,6 +19,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { CommonService } from '../../../../shared/services/common-services/common-service';
 import { NotificationService } from '../../../../shared/services/notification-service/notificaiton';
+import { ApprovalPopup } from '../approval-popup/approval-popup';
 import { AddDocment } from '../../components/add-docment/add-docment';
 import { DocumentEvidance } from '../../components/document-evidance/document-evidance';
 import { GenerateCertificate } from '../../components/generate-certificate/generate-certificate';
@@ -415,6 +417,10 @@ export class ManageDashboard implements OnInit {
     return !!doc && doc.is_generated === false;
   }
 
+  canApprove(doc: Document | null): boolean {
+    return !!doc && !!doc.report_download_url;
+  }
+
   canUploadSigningAssets(doc: Document | null): boolean {
     return !!doc && (!!doc.certificate_id || !!doc.certificate_download_url);
   }
@@ -437,32 +443,93 @@ export class ManageDashboard implements OnInit {
       return;
     }
 
-    const token = this.cookieService.get('aaa-token');
-    if (!token) {
-      this.notification.error('Session expired. Please login again.');
-      this.router.navigate(['/login']);
-      return;
-    }
-
     const url = type === 'report' ? doc.report_download_url : doc.certificate_download_url;
-    if (!url) {
+    const fileId =
+      type === 'report'
+        ? this.extractIdFromUrl(url)
+        : doc.certificate_id || this.extractIdFromUrl(url);
+
+    if (!fileId) {
       this.notification.error('Download URL not available');
       return;
     }
 
+    this.closeActionMenu();
+    this.cdr.detectChanges();
     this.isDownloading.set(`${doc.id}-${type}`);
-    const separator = url.includes('?') ? '&' : '?';
-    const downloadUrl = `${url}${separator}token=${encodeURIComponent(token)}`;
-    const newWindow = window.open(downloadUrl, '_blank');
 
-    setTimeout(() => {
-      this.isDownloading.set(null);
-    }, 2000);
+    const request$ =
+      type === 'report'
+        ? this.documentService.downloadReportPdf(fileId)
+        : this.documentService.downloadCertificatePdf(fileId);
 
-    if (!newWindow) {
-      window.location.href = downloadUrl;
+    request$.subscribe({
+      next: (res: HttpResponse<Blob>) => {
+        this.isDownloading.set(null);
+        const blob = res.body as Blob;
+        const fileName =
+          this.getFileNameFromHeader(res.headers.get('content-disposition')) ||
+          (type === 'report'
+            ? this.getPdfFileName(doc.name)
+            : `${this.getPdfFileName(doc.name).replace(/\.pdf$/i, '')}-certificate.pdf`);
+        this.saveBlob(blob, fileName);
+        this.notification.success(`${type === 'report' ? 'Report' : 'Certificate'} download started`);
+      },
+      error: async (err: any) => {
+        this.isDownloading.set(null);
+        this.notification.error(await this.getDownloadErrorMessage(err));
+      },
+    });
+  }
+
+  private getFileNameFromHeader(header: string | null): string {
+    if (!header) return '';
+    const utf8Match = /filename\*\s*=\s*(?:utf-8|UTF-8)''([^;]+)/i.exec(header);
+    if (utf8Match?.[1]) {
+      try {
+        return decodeURIComponent(utf8Match[1].trim());
+      } catch {
+        return utf8Match[1].trim();
+      }
     }
-    this.notification.success(`${type === 'report' ? 'Report' : 'Certificate'} download started`);
+    const plainMatch = /filename\s*=\s*"?([^";]+)"?/i.exec(header);
+    return plainMatch?.[1]?.trim() || '';
+  }
+
+  private extractIdFromUrl(url?: string): string {
+    if (!url) return '';
+    const parts = url.split('?')[0].split('/').filter(Boolean);
+    const last = parts[parts.length - 1];
+    return last?.toLowerCase() === 'pdf' ? parts[parts.length - 2] || '' : last || '';
+  }
+
+  private getPdfFileName(name: string): string {
+    const base = (name || 'document').trim();
+    return base.toLowerCase().endsWith('.pdf') ? base : `${base}.pdf`;
+  }
+
+  private saveBlob(blob: Blob, fileName: string) {
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(objectUrl);
+  }
+
+  private async getDownloadErrorMessage(err: any): Promise<string> {
+    const body = err?.error;
+    if (body instanceof Blob) {
+      try {
+        const parsed = JSON.parse(await body.text());
+        return parsed?.message || parsed?.detail || 'Download failed';
+      } catch {
+        return 'Download failed';
+      }
+    }
+    return body?.message || body?.detail || 'Download failed';
   }
 
   redirecTo(path: any, id: any) {
@@ -583,6 +650,27 @@ export class ManageDashboard implements OnInit {
       SigningAssetsPopup,
       Object.assign(initialState, {
         id: 'signing-assets',
+        class: 'modal-lg modal-dialog-centered alert-popup',
+      }),
+    );
+    this.bsModalRef?.content?.mapdata?.subscribe(() => {
+      this.getDocumentList();
+    });
+  }
+
+  onApproval(doc: Document) {
+    this.closeActionMenu();
+    this.cdr.detectChanges();
+
+    const initialState: ModalOptions = {
+      initialState: {
+        editData: doc,
+      },
+    };
+    this.bsModalRef = this.modalService.show(
+      ApprovalPopup,
+      Object.assign(initialState, {
+        id: 'report-approval',
         class: 'modal-lg modal-dialog-centered alert-popup',
       }),
     );
