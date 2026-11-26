@@ -8,17 +8,27 @@ import { HttpErrorResponse } from '@angular/common/http';
   providedIn: 'root',
 })
 export class CommonService {
-  private apiService = inject(HttpService)
+  private apiService = inject(HttpService);
 
-  documentTypeList() : Observable<any> {
+  documentTypeList(): Observable<any> {
     return this.apiService
       .get(API_CONSTANT.documentTypeList)
       .pipe(catchError((error: HttpErrorResponse) => of(error)));
-  };
+  }
 
   dateFormat(dateStr: string): string {
     if (!dateStr) return '';
     const [y, m, d] = dateStr.split('-');
     return `${d}-${m}-${y}`;
+  }
+
+  getMyNotifications(unreadOnly?: boolean): Observable<any> {
+    const query = unreadOnly === undefined ? '' : `?unread_only=${unreadOnly}`;
+    const url = `${API_CONSTANT.myNotifications}${query}`;
+    return this.apiService.get(url);
+  }
+
+  markAllNotificationsRead(): Observable<any> {
+    return this.apiService.post(API_CONSTANT.markAllNotificationsRead, {});
   }
 }

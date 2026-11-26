@@ -1,23 +1,20 @@
 export const API_CONSTANT = {
-  //auth api 
   login: 'v1/token',
   refreshToken: 'v1/token/refresh',
   logout: 'v1/token/logout',
   resetPwd: 'v1/reset-password',
 
-  // document api start here 
   dashboardList: 'projects',
   documentTypeList: 'documents/types',
   addUploadDoumnet: 'documents/upload',
   documentDetails: 'project/details/{projectId}',
 
-  //dashboard Api start here
   dashboard: 'dashboard/me',
   generateDocument: 'documents/generate',
   statusOptions: 'documents/status-options',
-  documentById : 'documents/generate/{id}',
-  updateDocument : 'documents/draft/{id}',
-  addEvidance : 'documents/{project_id}/evidence',
+  documentById: 'documents/generate/{id}',
+  updateDocument: 'documents/draft/{id}',
+  addEvidance: 'documents/{project_id}/evidence',
 
   generateCertificate: 'certificates/generate',
   finalizeDocument: 'documents/{project_id}/finalize',
@@ -25,5 +22,13 @@ export const API_CONSTANT = {
   certificateTimeline: 'certificates/{project_id}/timeline',
   reuploadDocument: 'documents/{project_id}/reupload',
   uploadSigningAssets: 'documents/{project_id}/signing-assets',
+  reportApproval: 'admin/documents/{project_id}/approval',
 
-}
+  adminReportStatus: 'admin/reports/status',
+  myNotifications: 'notifications/me',
+  markAllNotificationsRead: 'notifications/read-all',
+  downloadReportPdf: 'documents/download/{report_id}/pdf',
+  downloadCertificatePdf: 'certificates/download/{cert_id}/pdf',
+  pendingApprovals: 'admin/reports/pending-approval',
+reviewApproval: 'admin/documents/{project_id}/approval',
+};

@@ -1,0 +1,559 @@
+<div class="!min-h-screen !bg-slate-50 !p-6">
+    <div class="!mx-auto">
+        <div class="!flex !flex-col xl:!flex-row xl:!items-center !justify-between !gap-6 !mb-8">
+            <div class="!flex !items-center !gap-4">
+                <div class="!flex !h-12 !w-12 !items-center !justify-center !rounded-xl !bg-blue-100 !text-blue-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="!w-6 !h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="!text-2xl !font-bold !text-slate-900 !mb-0">Audit Review</h1>
+                    <p class="!text-sm !text-slate-500 !mb-0">
+                        Track upload, certificate, signing and pending-action status of every report.
+                    </p>
+                </div>
+            </div>
+
+            <div class="!grid !grid-cols-3 !gap-4">
+                <div class="!bg-white !rounded-xl !border !border-slate-200 !p-3 !flex !items-center !gap-3 !min-w-[160px]">
+                    <div class="!h-10 !w-10 !rounded-lg !bg-blue-50 !text-blue-600 !flex !items-center !justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="!w-5 !h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="!text-lg !font-bold !text-slate-800 !mb-0">{{ totalFromApi() }}</p>
+                        <p class="!text-xs !text-slate-500 !mb-0">Total Reports</p>
+                    </div>
+                </div>
+
+                <div class="!bg-white !rounded-xl !border !border-slate-200 !p-3 !flex !items-center !gap-3 !min-w-[160px]">
+                    <div
+                        class="!h-10 !w-10 !rounded-lg !bg-emerald-50 !text-emerald-600 !flex !items-center !justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="!w-5 !h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="!text-lg !font-bold !text-slate-800 !mb-0">{{ completedCount() }}</p>
+                        <p class="!text-xs !text-slate-500 !mb-0">Completed</p>
+                    </div>
+                </div>
+
+                <div class="!bg-white !rounded-xl !border !border-slate-200 !p-3 !flex !items-center !gap-3 !min-w-[160px]">
+                    <div
+                        class="!h-10 !w-10 !rounded-lg !bg-amber-50 !text-amber-600 !flex !items-center !justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="!w-5 !h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="!text-lg !font-bold !text-slate-800 !mb-0">{{ pendingCount() }}</p>
+                        <p class="!text-xs !text-slate-500 !mb-0">Pending</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="!rounded-2xl !bg-white !shadow-sm !border !border-slate-200">
+            <div class="!p-4 !border-b !border-slate-100 !flex !flex-wrap !items-center !gap-3">
+                <div class="!flex !items-center !gap-1 !p-1 !bg-slate-100 !rounded-lg">
+                    @for (period of periodOptions; track period.value) {
+                    <button (click)="onPeriodChange(period.value)"
+                        class="!px-3 !py-1.5 !text-sm !font-medium !rounded-md !transition-colors" [ngClass]="
+                            selectedPeriod() === period.value
+                                ? '!bg-white !text-blue-700 !shadow-sm'
+                                : '!text-slate-600 hover:!text-slate-900'
+                        ">
+                        {{ period.label }}
+                    </button>
+                    }
+                </div>
+
+                @if (selectedPeriod() === 'custom') {
+                <div class="!flex !items-center !gap-2">
+                    <input type="date" [value]="startDate()" [max]="endDate()" (change)="onStartDateChange($event)"
+                        class="!rounded-lg !border !border-slate-300 !px-3 !py-2 !text-sm focus:!border-blue-500 !outline-none !bg-white" />
+                    <span class="!text-sm !text-slate-400">to</span>
+                    <input type="date" [value]="endDate()" [min]="startDate()" (change)="onEndDateChange($event)"
+                        class="!rounded-lg !border !border-slate-300 !px-3 !py-2 !text-sm focus:!border-blue-500 !outline-none !bg-white" />
+                    <button (click)="getReports()"
+                        class="!px-4 !py-2 !text-sm !font-medium !bg-blue-700 !text-white !rounded-lg hover:!bg-blue-800">
+                        Apply
+                    </button>
+                </div>
+                }
+
+                <div class="!flex-1 !min-w-[250px] !relative">
+                    <div class="!absolute !inset-y-0 !left-0 !pl-3 !flex !items-center !pointer-events-none">
+                        <svg class="!h-4 !w-4 !text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input type="text"
+                        class="!w-full !rounded-lg !border !border-slate-300 !pl-10 !pr-4 !py-2 !text-sm focus:!border-blue-500 focus:!ring-1 focus:!ring-blue-500 !outline-none !transition-all"
+                        placeholder="Search by client, project, file or uploader..." [value]="searchText()"
+                        (input)="onSearch($event)" />
+                </div>
+
+                <div class="!flex !items-center !gap-2">
+                    <button (click)="openPendingPopup()"
+                        class="!px-3 !py-2 !text-sm !border !border-amber-200 !rounded-lg !bg-white !text-amber-700 hover:!bg-amber-50 !flex !items-center !gap-2 !transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="!w-4 !h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Pending Approvals
+                        @if (pendingTotal() > 0) {
+                        <span class="!px-1.5 !py-0.5 !rounded-full !bg-amber-500 !text-white !text-[10px] !font-semibold">
+                            {{ pendingTotal() }}
+                        </span>
+                        }
+                    </button>
+                    <button (click)="getReports()"
+                        class="!px-3 !py-2 !text-sm !border !border-slate-300 !rounded-lg !bg-white !text-slate-700 hover:!bg-slate-50 !flex !items-center !gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="!w-4 !h-4" [ngClass]="{ '!animate-spin': isLoading() }">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                        </svg>
+                        Refresh
+                    </button>
+                    <button
+                        class="!px-3 !py-2 !text-sm !border !border-red-200 !rounded-lg !bg-white !text-red-600 hover:!bg-red-50 !flex !items-center !gap-2"
+                        (click)="clearFilters()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="!w-4 !h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+
+            @if (appliedFilters(); as filters) {
+            <div class="!px-4 !py-2 !bg-slate-50/60 !border-b !border-slate-100 !text-xs !text-slate-500">
+                Showing
+                <span class="!font-semibold !text-slate-700">{{ filters.period | titlecase }}</span>
+                @if (filters.start_date) {
+                reports from
+                <span class="!font-semibold !text-slate-700">{{ filters.start_date | date: 'dd MMM yyyy' }}</span>
+                to
+                <span class="!font-semibold !text-slate-700">{{ filters.end_date | date: 'dd MMM yyyy' }}</span>
+                }
+                <span class="!text-slate-400">({{ filters.timezone }})</span>
+            </div>
+            }
+
+            @if (actionAlert()) {
+            <div
+                class="!mx-4 !mt-4 !flex !items-start !justify-between !gap-3 !rounded-lg !border !border-red-200 !bg-red-50 !px-4 !py-3">
+                <div class="!flex !items-start !gap-2 !text-sm !text-red-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="!w-5 !h-5 !shrink-0 !mt-0.5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                    <span>{{ actionAlert() }}</span>
+                </div>
+                <button (click)="actionAlert.set('')"
+                    class="!text-red-500 hover:!text-red-700 !text-xl !leading-none">&times;</button>
+            </div>
+            }
+
+            <div class="!overflow-x-auto">
+                @if (isLoading()) {
+                <div class="!flex !items-center !justify-center !py-20">
+                    <div class="!animate-spin !rounded-full !h-8 !w-8 !border-b-2 !border-blue-700"></div>
+                </div>
+                } @else {
+                <table class="!w-full !text-left !border-collapse">
+                    <thead>
+                        <tr
+                            class="!border-b !border-slate-200 !bg-slate-50/50 !text-xs !font-semibold !text-slate-500 !uppercase !tracking-wider">
+                            <th class="!p-4 !w-12 !text-center">#</th>
+                            <th class="!p-4">Project / Client</th>
+                            <th class="!p-4">Report</th>
+                            <th class="!p-4">Stage</th>
+                            <th class="!p-4">Pending Actions</th>
+                            <th class="!p-4">Uploaded By</th>
+                            <th class="!p-4">Completion</th>
+                            <th class="!p-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="!divide-y !divide-slate-100">
+                        @for (item of filteredReports(); track item.report_id; let i = $index) {
+                        <tr class="hover:!bg-slate-50 !transition-colors">
+                            <td class="!p-4 !text-center !text-sm !text-slate-500 !font-medium">{{ i + 1 }}</td>
+
+                            <td class="!p-4">
+                                <p class="!font-medium !text-slate-800 !text-sm !mb-0.5 !line-clamp-1"
+                                    title="{{ item.project?.name }}">
+                                    {{ item.project?.name }}
+                                </p>
+                                <p class="!text-xs !text-slate-500 !mb-0">{{ item.client?.name }}</p>
+                            </td>
+
+                            <td class="!p-4">
+                                <div class="!flex !items-start !gap-3">
+                                    <div
+                                        class="!flex !h-10 !w-10 !flex-shrink-0 !items-center !justify-center !rounded-lg !text-lg !border !border-slate-100 !bg-red-50">
+                                        📄
+                                    </div>
+                                    <div class="!min-w-0">
+                                        <p class="!font-medium !text-slate-800 !text-sm !mb-1 !line-clamp-1"
+                                            title="{{ item.report?.filename }}">
+                                            {{ item.report?.filename }}
+                                        </p>
+                                        <div class="!flex !items-center !gap-2">
+                                            <span
+                                                class="!inline-flex !text-white !items-center !px-2 !py-0.5 !rounded !text-[10px] !font-medium"
+                                                [ngClass]="getAuditTypeClass(item.report?.audit_type)">
+                                                {{ item.report?.audit_type | uppercase }}
+                                            </span>
+                                            <span class="!text-xs !text-slate-400">
+                                                {{ item.report?.is_generated ? 'Generated' : 'Uploaded' }} · v{{
+                                                item.report?.upload_version }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="!p-4">
+                                <div class="!flex !flex-col !gap-1.5 !items-start">
+                                    <span
+                                        class="!inline-flex !items-center !px-2.5 !py-0.5 !rounded-full !text-xs !font-medium !border"
+                                        [ngClass]="getStageClass(item.report?.stage)">
+                                        {{ item.report?.stage | titlecase }}
+                                    </span>
+                                </div>
+                            </td>
+
+                            <td class="!p-4 !max-w-[260px]">
+                                @if (item.pending_admin_actions?.length) {
+                                <div class="!flex !flex-col !gap-1.5">
+                                    @for (action of item.pending_admin_actions; track $index) {
+                                    <span
+                                        class="!inline-flex !items-start !gap-1.5 !px-2 !py-1 !rounded-md !text-xs !bg-amber-50 !text-amber-800 !border !border-amber-100">
+                                        <span class="!mt-1 !h-1.5 !w-1.5 !rounded-full !bg-amber-500 !flex-shrink-0"></span>
+                                        {{ action }}
+                                    </span>
+                                    }
+                                </div>
+                                } @else {
+                                <span class="!text-xs !text-slate-400">No pending actions</span>
+                                }
+                            </td>
+
+                            <td class="!p-4">
+                                <p class="!text-sm !text-slate-700 !font-medium !mb-0.5">
+                                    {{ item.report?.uploaded_by?.username || '-' }}
+                                </p>
+                                <p class="!text-xs !text-slate-400 !mb-0">
+                                    {{ item.report?.uploaded_at | date: 'dd MMM yyyy, hh:mm a' }}
+                                </p>
+                            </td>
+
+                            <td class="!p-4">
+                                <span
+                                    class="!inline-flex !items-center !gap-1.5 !px-2.5 !py-1 !rounded-full !text-xs !font-medium !border"
+                                    [ngClass]="getCompletionBadgeClass(item.completion_status)">
+                                    <span class="!h-1.5 !w-1.5 !rounded-full"
+                                        [ngClass]="getCompletionDotClass(item.completion_status)"></span>
+                                    {{ item.completion_status | uppercase }}
+                                </span>
+                            </td>
+
+                            <td class="!p-4 !text-right">
+                                <div class="!relative action-menu-wrapper !inline-block">
+                                    <button (click)="toggleActionMenu(item, $event)"
+                                        class="!p-2 !text-slate-500 hover:!text-slate-700 hover:!bg-slate-100 !rounded-lg !transition-colors">
+                                        @if (downloadingKey()?.startsWith(item.report_id)) {
+                                        <span
+                                            class="!inline-block !animate-spin !rounded-full !h-5 !w-5 !border-b-2 !border-indigo-600"></span>
+                                        } @else {
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor" class="!w-5 !h-5">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+                                        </svg>
+                                        }
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        } @empty {
+                        <tr>
+                            <td colspan="8" class="!p-12 !text-center !text-slate-500">
+                                <div class="!flex !flex-col !items-center !justify-center">
+                                    <div
+                                        class="!h-12 !w-12 !rounded-full !bg-slate-100 !flex !items-center !justify-center !mb-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor" class="!w-6 !h-6 !text-slate-400">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                        </svg>
+                                    </div>
+                                    <p class="!text-sm !font-medium !text-slate-900 !mb-0">No reports found</p>
+                                    <p class="!text-xs !text-slate-500 !mt-1 !mb-0">
+                                        Try changing the period or search keyword
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+                }
+            </div>
+
+            @if (!isLoading() && reports().length > 0) {
+            <div class="!border-t !border-slate-200 !p-4 !bg-slate-50/50">
+                <span class="!text-sm !text-slate-500">
+                    Showing <span class="!font-medium">{{ filteredReports().length }}</span> of
+                    <span class="!font-medium">{{ totalFromApi() }}</span> reports
+                </span>
+            </div>
+            }
+        </div>
+    </div>
+
+    @if (openActionMenuId && activeItem) {
+    <div #actionDropdown
+        class="!fixed !z-[9999] !min-w-[220px] !bg-white !border !border-slate-200 !rounded-lg !shadow-lg !py-1 action-dropdown-menu"
+        [style.top.px]="menuPosition.top" [style.left.px]="menuPosition.left"
+        [style.visibility]="menuReady ? 'visible' : 'hidden'">
+            <button (click)="onDownloadReport(activeItem)"
+                class="!w-full !flex !items-center !gap-2 !px-3 !py-2 !text-sm !text-slate-600 hover:!bg-indigo-50 hover:!text-indigo-700 !transition-colors !text-left">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="!w-4 !h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Download Report
+            </button>
+            @if (activeItem.certificate?.generated && activeItem.certificate?.certificate_id) {
+            <button (click)="onDownloadCertificate(activeItem)"
+                class="!w-full !flex !items-center !gap-2 !px-3 !py-2 !text-sm !text-slate-600 hover:!bg-emerald-50 hover:!text-emerald-700 !transition-colors !text-left">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="!w-4 !h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Download Certificate
+            </button>
+            }
+            @if (!activeItem.barcode?.uploaded) {
+            <button (click)="onUploadBarcode(activeItem)"
+                class="!w-full !flex !items-center !gap-2 !px-3 !py-2 !text-sm !text-slate-600 hover:!bg-teal-50 hover:!text-teal-700 !transition-colors !text-left">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="!w-4 !h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" />
+                </svg>
+                Upload Barcode
+            </button>
+            }
+            @if (!activeItem.certificate?.generated) {
+            <button (click)="onFinalize(activeItem)"
+                class="!w-full !flex !items-center !gap-2 !px-3 !py-2 !text-sm !text-slate-600 hover:!bg-emerald-50 hover:!text-emerald-700 !transition-colors !text-left">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="!w-4 !h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Finalize &amp; Generate Certificate
+            </button>
+            }
+            @if (!activeItem.report?.is_generated) {
+            <button (click)="onReupload(activeItem)"
+                class="!w-full !flex !items-center !gap-2 !px-3 !py-2 !text-sm !text-slate-600 hover:!bg-blue-50 hover:!text-blue-700 !transition-colors !text-left">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor" class="!w-4 !h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                Re-upload Report
+            </button>
+            }
+    </div>
+    }
+
+    @if (showPendingPopup()) {
+    <div class="!fixed !inset-0 !z-[10000] !flex !items-center !justify-center !bg-slate-900/50 !p-4"
+        (click)="closePendingPopup()">
+        <div class="!w-full !max-w-4xl !max-h-[85vh] !flex !flex-col !bg-white !rounded-2xl !shadow-xl !overflow-hidden"
+            (click)="$event.stopPropagation()">
+            <div
+                class="!flex !flex-wrap !items-center !justify-between !gap-3 !px-6 !py-4 !border-b !border-slate-100 !bg-amber-50">
+                <div class="!flex !items-center !gap-3">
+                    <div
+                        class="!flex !h-10 !w-10 !items-center !justify-center !rounded-xl !bg-amber-100 !text-amber-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="!w-5 !h-5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="!text-lg !font-semibold !text-slate-900 !mb-0">Pending Approvals</h2>
+                        <p class="!text-xs !text-slate-600 !mb-0">
+                            Showing <span class="!font-semibold">{{ pendingApprovals().length }}</span> of
+                            <span class="!font-semibold">{{ pendingTotal() }}</span> reports awaiting admin approval
+                        </p>
+                    </div>
+                </div>
+                <div class="!flex !items-center !gap-2">
+                    <label class="!text-xs !text-slate-600 !mb-0">Limit</label>
+                    <select (change)="onPendingLimitChange($event)"
+                        class="!rounded-lg !border !border-slate-300 !bg-white !px-2 !py-1.5 !text-sm !text-slate-700 !outline-none">
+                        @for (option of pendingLimitOptions; track option) {
+                        <option [value]="option" [selected]="option === pendingLimit()">{{ option }}</option>
+                        }
+                    </select>
+                    <button (click)="getPendingApprovals()"
+                        class="!px-3 !py-1.5 !text-sm !border !border-slate-300 !rounded-lg !bg-white !text-slate-700 hover:!bg-slate-50">
+                        Reload
+                    </button>
+                    <button (click)="closePendingPopup()"
+                        class="!px-2 !text-slate-400 hover:!text-slate-600 !text-2xl !leading-none">&times;</button>
+                </div>
+            </div>
+
+            <div class="!flex-1 !overflow-y-auto">
+                @if (isPendingLoading()) {
+                <div class="!flex !items-center !justify-center !py-20">
+                    <div class="!animate-spin !rounded-full !h-8 !w-8 !border-b-2 !border-amber-600"></div>
+                </div>
+                } @else if (pendingError()) {
+                <div class="!p-6">
+                    <div
+                        class="!flex !items-start !gap-2 !rounded-lg !border !border-red-200 !bg-red-50 !px-4 !py-3 !text-sm !text-red-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="!w-5 !h-5 !shrink-0 !mt-0.5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                        </svg>
+                        <span>{{ pendingError() }}</span>
+                    </div>
+                </div>
+                } @else {
+                <table class="!w-full !text-left !border-collapse">
+                    <thead class="!sticky !top-0 !z-10 !bg-slate-50">
+                        <tr
+                            class="!border-b !border-slate-200 !text-xs !font-semibold !text-slate-500 !uppercase !tracking-wider">
+                            <th class="!p-3 !w-12 !text-center">#</th>
+                            <th class="!p-3">Project</th>
+                            <th class="!p-3">Client</th>
+                            <th class="!p-3 !text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="!divide-y !divide-slate-100">
+                        @for (pending of pendingApprovals(); track pending.project_id; let i = $index) {
+                        <tr class="hover:!bg-slate-50 !transition-colors">
+                            <td class="!p-3 !text-center !text-sm !text-slate-500 !font-medium">{{ i + 1 }}</td>
+                            <td class="!p-3 !text-sm !font-medium !text-slate-800">{{ pending.project_name }}</td>
+                            <td class="!p-3 !text-sm !text-slate-600">{{ pending.client_name }}</td>
+                            <td class="!p-3 !text-right">
+                                <button (click)="openApprovalPopup(pending)"
+                                    class="!inline-flex !items-center !gap-1.5 !px-3 !py-1.5 !text-xs !font-medium !rounded-lg !bg-emerald-600 !text-white hover:!bg-emerald-700 !transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                        stroke-width="1.5" stroke="currentColor" class="!w-4 !h-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                            d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Approval
+                                </button>
+                            </td>
+                        </tr>
+                        } @empty {
+                        <tr>
+                            <td colspan="4" class="!p-12 !text-center !text-sm !text-slate-500">
+                                No pending approvals found
+                            </td>
+                        </tr>
+                        }
+                    </tbody>
+                </table>
+                }
+            </div>
+        </div>
+    </div>
+    }
+
+    @if (approvalItem(); as approval) {
+    <div class="!fixed !inset-0 !z-[10001] !flex !items-center !justify-center !bg-slate-900/50 !p-4"
+        (click)="closeApprovalPopup()">
+        <div class="!w-full !max-w-lg !bg-white !rounded-2xl !shadow-xl !overflow-hidden"
+            (click)="$event.stopPropagation()">
+            <div class="!flex !items-start !justify-between !gap-3 !px-6 !py-4 !border-b !border-slate-100">
+                <div class="!min-w-0">
+                    <h2 class="!text-lg !font-semibold !text-slate-900 !mb-0.5">Review Report Approval</h2>
+                    <p class="!text-sm !font-medium !text-slate-700 !mb-0 !line-clamp-1">{{ approval.project_name }}</p>
+                    <p class="!text-xs !text-slate-500 !mb-0">{{ approval.client_name }}</p>
+                </div>
+                <button (click)="closeApprovalPopup()" [disabled]="isSubmittingApproval()"
+                    class="!text-slate-400 hover:!text-slate-600 !text-2xl !leading-none">&times;</button>
+            </div>
+
+            <div class="!px-6 !py-5 !space-y-4">
+                @if (approvalError()) {
+                <div
+                    class="!flex !items-start !gap-2 !rounded-lg !border !border-red-200 !bg-red-50 !px-3 !py-2 !text-sm !text-red-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="!w-5 !h-5 !shrink-0 !mt-0.5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                    <span>{{ approvalError() }}</span>
+                </div>
+                }
+
+                <div>
+                    <p class="!text-sm !font-medium !text-slate-700 !mb-2">Decision</p>
+                    <div class="!grid !grid-cols-2 !gap-3">
+                        @for (option of approvalDecisions; track option.value) {
+                        <button type="button" (click)="onDecisionChange(option.value)"
+                            [disabled]="isSubmittingApproval()"
+                            class="!px-4 !py-2.5 !text-sm !font-medium !rounded-lg !border !transition-colors"
+                            [ngClass]="getDecisionClass(option.value, approvalDecision() === option.value)">
+                            {{ option.label }}
+                        </button>
+                        }
+                    </div>
+                </div>
+
+                <div>
+                    <label class="!text-sm !font-medium !text-slate-700 !mb-2 !block">Comment</label>
+                    <textarea rows="4" [value]="approvalComment()" (input)="onCommentInput($event)"
+                        [disabled]="isSubmittingApproval()" placeholder="Add a comment..."
+                        class="!w-full !rounded-lg !border !border-slate-300 !px-3 !py-2 !text-sm focus:!border-blue-500 focus:!ring-1 focus:!ring-blue-500 !outline-none !resize-none"></textarea>
+                </div>
+            </div>
+
+            <div class="!flex !items-center !justify-end !gap-3 !px-6 !py-4 !border-t !border-slate-100 !bg-slate-50/60">
+                <button (click)="closeApprovalPopup()" [disabled]="isSubmittingApproval()"
+                    class="!px-4 !py-2 !text-sm !font-medium !border !border-slate-300 !rounded-lg !bg-white !text-slate-700 hover:!bg-slate-50 disabled:!opacity-50">
+                    Cancel
+                </button>
+                <button (click)="submitApproval()" [disabled]="isSubmittingApproval()"
+                    class="!px-4 !py-2 !text-sm !font-medium !rounded-lg !text-white !flex !items-center !gap-2 disabled:!opacity-60"
+                    [ngClass]="approvalDecision() === 'reject' ? '!bg-red-600 hover:!bg-red-700' : '!bg-emerald-600 hover:!bg-emerald-700'">
+                    @if (isSubmittingApproval()) {
+                    <span class="!inline-block !animate-spin !rounded-full !h-4 !w-4 !border-b-2 !border-white"></span>
+                    }
+                    Submit
+                </button>
+            </div>
+        </div>
+    </div>
+    }
+</div>
